@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
@@ -7,6 +7,11 @@ import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import { useUsers } from "../../hooks/useUsers";
 import Alert from "../ui/alert/Alert";
+
+type FormErrors = {
+  email?: string;
+  password?: string;
+};
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,6 +25,16 @@ export default function SignInForm() {
     email: "",
     password: "",
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<{ email: boolean; password: boolean }>(
+    {
+      email: false,
+      password: false,
+    }
+  );
+
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   const { login, auth } = useUsers({
     onLogin: () => {
@@ -29,10 +44,11 @@ export default function SignInForm() {
         message: "You are now logged in.",
       });
 
-      // Delay navigation so user can see the alert
+      // Auto-dismiss and navigate
       setTimeout(() => {
-        setTimeout(() => navigate("/"), 1000);
-      }, 1000);
+        setAlert(null);
+        navigate("/");
+      }, 1500);
     },
 
     onError: (error) => {
@@ -43,10 +59,16 @@ export default function SignInForm() {
         title: "Login Failed",
         message: error || "Something went wrong.",
       });
+
+      // Auto-dismiss error alerts after 5 seconds
+      setTimeout(() => setAlert(null), 5000);
     },
   });
 
-  const navigate = useNavigate();
+  // Auto-focus email field on mount
+  useEffect(() => {
+    emailInputRef.current?.focus();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -54,18 +76,82 @@ export default function SignInForm() {
       ...prev,
       [name]: value,
     }));
+
+    const field = name as keyof FormErrors;
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: "",
+      }));
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    const field = name as keyof typeof touched;
+
+    setTouched((prev) => ({
+      ...prev,
+      [field]: true,
+    }));
+
+    // Validate on blur for better UX
+    if (touched[field]) {
+      const validationErrors = validateForm();
+      if (validationErrors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: validationErrors[field],
+        }));
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Mark all fields as touched
+    setTouched({ email: true, password: true });
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      // Focus first error field
+      if (validationErrors.email) {
+        emailInputRef.current?.focus();
+      }
+      return;
+    }
+
+    setErrors({});
     try {
       await login({
-        email: formData.email,
+        email: formData.email.trim(), // Trim whitespace
         password: formData.password,
+        rememberMe: isChecked, // Pass the remember me preference
       });
     } catch (error) {
       // Error is handled by the hook's onError callback
     }
+  };
+
+  const validateForm = (): FormErrors => {
+    const errors: FormErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email.trim())) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.password) {
+      errors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    }
+
+    return errors;
   };
 
   return (
@@ -96,7 +182,10 @@ export default function SignInForm() {
           </div>
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+              <button
+                className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={auth.isLoading}
+              >
                 <svg
                   width="20"
                   height="20"
@@ -121,9 +210,12 @@ export default function SignInForm() {
                     fill="#EB4335"
                   />
                 </svg>
-                Sign in with Google
+                {auth.isLoading ? "Loading..." : "Sign in with Google"}
               </button>
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+              <button
+                className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={auth.isLoading}
+              >
                 <svg
                   width="21"
                   className="fill-current"
@@ -134,7 +226,7 @@ export default function SignInForm() {
                 >
                   <path d="M15.6705 1.875H18.4272L12.4047 8.75833L19.4897 18.125H13.9422L9.59717 12.4442L4.62554 18.125H1.86721L8.30887 10.7625L1.51221 1.875H7.20054L11.128 7.0675L15.6705 1.875ZM14.703 16.475H16.2305L6.37054 3.43833H4.73137L14.703 16.475Z" />
                 </svg>
-                Sign in with X
+                {auth.isLoading ? "Loading..." : "Sign in with X"}
               </button>
             </div>
             <div className="relative py-3 sm:py-5">
@@ -148,54 +240,94 @@ export default function SignInForm() {
               </div>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="space-y-6">
+              <fieldset disabled={auth.isLoading} className="space-y-6">
                 <div>
-                  <Label>
-                    Email <span className="text-error-500">*</span>{" "}
+                  <Label htmlFor="email">
+                    Email <span className="text-error-500">*</span>
                   </Label>
                   <Input
+                    ref={emailInputRef}
+                    id="email"
                     placeholder="info@gmail.com"
                     name="email"
                     type="email"
+                    autoComplete="email"
                     value={formData.email}
                     required
                     onChange={handleChange}
+                    onBlur={handleBlur}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
                   />
+                  {errors.email && (
+                    <p
+                      id="email-error"
+                      className="mt-1 text-sm text-error-500"
+                      role="alert"
+                    >
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <Label>
-                    Password <span className="text-error-500">*</span>{" "}
+                  <Label htmlFor="password">
+                    Password <span className="text-error-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
+                      id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
                       name="password"
+                      autoComplete="current-password"
                       value={formData.password}
                       required
                       onChange={handleChange}
+                      onBlur={handleBlur}
+                      aria-invalid={!!errors.password}
+                      aria-describedby={
+                        errors.password ? "password-error" : undefined
+                      }
                     />
-                    <span
+                    <button
+                      type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                      className="absolute z-30 -translate-y-1/2 right-4 top-1/2"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      tabIndex={-1}
                     >
                       {showPassword ? (
                         <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
                       ) : (
                         <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
                       )}
-                    </span>
+                    </button>
                   </div>
+                  {errors.password && (
+                    <p
+                      id="password-error"
+                      className="mt-1 text-sm text-error-500"
+                      role="alert"
+                    >
+                      {errors.password}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Checkbox
+                      id="remember"
                       checked={isChecked}
-                      onChange={(e) => setIsChecked(e.target.checked)}
+                      onChange={(checked) => setIsChecked(checked)}
                     />
-                    <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
+                    <label
+                      htmlFor="remember"
+                      className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400"
+                    >
                       Keep me logged in
-                    </span>
+                    </label>
                   </div>
                   <Link
                     to="/reset-password"
@@ -206,6 +338,7 @@ export default function SignInForm() {
                 </div>
                 <div>
                   <Button
+                    type="submit"
                     className="w-full"
                     size="sm"
                     disabled={auth.isLoading}
@@ -213,12 +346,12 @@ export default function SignInForm() {
                     {auth.isLoading ? "Signing in..." : "Sign in"}
                   </Button>
                 </div>
-              </div>
+              </fieldset>
             </form>
 
             <div className="mt-5">
               <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-                Don&apos;t have an account? {""}
+                Don&apos;t have an account?{" "}
                 <Link
                   to="/signup"
                   className="text-brand-500 hover:text-brand-600 dark:text-brand-400"

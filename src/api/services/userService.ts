@@ -2,9 +2,11 @@ import apiClient from "../apiClient";
 
 export interface User {
   user_id: string;
-  username: string;
+  first_name: string;
+  last_name: string;
   email: string;
   role: string;
+  location: string;
   available_votes: number;
   created_at: string;
 }
@@ -13,6 +15,7 @@ export interface RegisterRequest {
   username: string;
   email: string;
   password: string;
+  location: string;
 }
 
 export interface LoginRequest {
@@ -28,6 +31,7 @@ export interface UpdateProfileRequest {
   username?: string;
   email?: string;
   password?: string;
+  location?: string;
 }
 
 export interface ForgotPasswordRequest {
@@ -59,7 +63,7 @@ export interface ApiResponse<T> {
 }
 
 class UserService {
-  private readonly usersPath = '/profile';
+  private readonly usersPath = "/profile";
 
   // Auth endpoints
   async register(registerRequest: RegisterRequest): Promise<User> {
@@ -68,11 +72,16 @@ class UserService {
   }
 
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>(`/login`, loginRequest);
+    const response = await apiClient.post<LoginResponse>(
+      `/login`,
+      loginRequest
+    );
     return response.data;
   }
 
-  async forgotPassword(forgotPasswordRequest: ForgotPasswordRequest): Promise<{ message: string }> {
+  async forgotPassword(
+    forgotPasswordRequest: ForgotPasswordRequest
+  ): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>(
       `/forgot-password`,
       forgotPasswordRequest
@@ -80,7 +89,9 @@ class UserService {
     return response.data;
   }
 
-  async resetPassword(resetPasswordRequest: ResetPasswordRequest): Promise<{ message: string }> {
+  async resetPassword(
+    resetPasswordRequest: ResetPasswordRequest
+  ): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>(
       `/reset-password`,
       resetPasswordRequest
@@ -107,8 +118,14 @@ class UserService {
     return response.data;
   }
 
-  async updateProfile(id: string, updateData: UpdateProfileRequest): Promise<User> {
-    const response = await apiClient.put<User>(`${this.usersPath}/${id}`, updateData);
+  async updateProfile(
+    id: string,
+    updateData: UpdateProfileRequest
+  ): Promise<User> {
+    const response = await apiClient.put<User>(
+      `${this.usersPath}/${id}`,
+      updateData
+    );
     return response.data;
   }
 
@@ -117,7 +134,9 @@ class UserService {
   }
 
   async promoteUser(id: string): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>(`${this.usersPath}/${id}/promote`);
+    const response = await apiClient.post<{ message: string }>(
+      `${this.usersPath}/${id}/promote`
+    );
     return response.data;
   }
 }

@@ -17,6 +17,7 @@ import {
   ResetPasswordRequest,
   ValidateResetTokenResponse,
 } from "../api/services/userService";
+
 /* ---------- Interfaces ---------- */
 interface AuthState {
   user: User | null;
@@ -24,17 +25,24 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
+
 interface UsersState {
   users: User[];
   isLoading: boolean;
 }
+
+// Extended LoginRequest to include rememberMe
+export interface LoginRequestWithRemember extends LoginRequest {
+  rememberMe?: boolean;
+}
+
 export interface UseUsersReturn {
   // Auth state
   auth: AuthState;
   users: UsersState;
   // Auth actions
   register: (data: RegisterRequest) => Promise<void>;
-  login: (data: LoginRequest) => Promise<void>;
+  login: (data: LoginRequestWithRemember) => Promise<void>;
   logout: () => void;
   forgotPassword: (data: ForgotPasswordRequest) => Promise<void>;
   resetPassword: (data: ResetPasswordRequest) => Promise<void>;
@@ -49,18 +57,45 @@ export interface UseUsersReturn {
   clearError: () => void;
   clearUsers: () => void;
 }
+
 export interface UseUsersOptions {
-  // onLogin may get a user (or null if user fetch failed)
   onLogin?: (user: User | null) => void;
   onLogout?: () => void;
   onError?: (error: string) => void;
 }
+
 /* ---------- Context ---------- */
 type AuthContextType = UseUsersReturn;
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 /* ---------- Helpers ---------- */
-// Small JWT payload parser to try to extract user id (if your token has it).
-// Not cryptographically validated—only used to extract a claim client-side.
+// Helper to get token from either storage
+function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("token") || sessionStorage.getItem("token");
+}
+
+// Helper to store token based on rememberMe preference
+function storeToken(token: string, rememberMe: boolean) {
+  if (typeof window === "undefined") return;
+
+  if (rememberMe) {
+    localStorage.setItem("token", token);
+    sessionStorage.removeItem("token"); // Clear from session if it exists
+  } else {
+    sessionStorage.setItem("token", token);
+    localStorage.removeItem("token"); // Clear from local if it exists
+  }
+}
+
+// Helper to remove token from both storages
+function removeToken() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("token");
+  sessionStorage.removeItem("token");
+}
+
+// Small JWT payload parser
 function parseJwtPayload(token: string | null) {
   if (!token) return null;
   try {
@@ -77,6 +112,7 @@ function parseJwtPayload(token: string | null) {
     return null;
   }
 }
+
 /* ---------- Hook Implementation ---------- */
 export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
   const [auth, setAuth] = useState<AuthState>({
@@ -85,30 +121,35 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     isAuthenticated: false,
     isLoading: false,
   });
+
   const [users, setUsers] = useState<UsersState>({
     users: [],
     isLoading: false,
   });
+
   const [error, setError] = useState<string | null>(null);
+
   const clearError = useCallback(() => setError(null), []);
   const clearUsers = useCallback(
     () => setUsers({ users: [], isLoading: false }),
     []
   );
-  // Initialize token from localStorage and try to fetch current user
+
+  // Initialize token from storage and try to fetch current user
   useEffect(() => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getStoredToken();
     if (!token) return;
+
     setAuth((prev) => ({
       ...prev,
       token,
       isAuthenticated: true,
       isLoading: true,
     }));
-    // Option A: If your backend has a /me endpoint, use that instead of parsing token
+
     const payload = parseJwtPayload(token);
     const userId = payload?.user_id ?? payload?.sub ?? payload?.id ?? null;
+
     if (userId) {
       userService
         .getProfile(userId)
@@ -118,7 +159,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
         })
         .catch(() => {
           // couldn't fetch user for token - clear token
-          localStorage.removeItem("token");
+          removeToken();
           setAuth({
             user: null,
             token: null,
@@ -128,22 +169,22 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
           options?.onError?.("Failed to fetch profile for saved token");
         });
     } else {
-      // If we cannot find a user id in token, just stop loading and allow explicit fetch later
       setAuth((prev) => ({ ...prev, isLoading: false }));
     }
-    console.log("see the id?" + payload.user_id);
-    // only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   /* ---------- Auth actions ---------- */
   const register = useCallback(
     async (data: RegisterRequest) => {
       setAuth((p) => ({ ...p, isLoading: true }));
       try {
         const resp = await userService.register(data);
-        const token = resp.token; // backend returns token
-        console.log("token", token);
-        localStorage.setItem("token", token);
+        const token = resp.token;
+
+        // Default to rememberMe=true for registration
+        storeToken(token, true);
+
         setAuth((prev) => ({
           ...prev,
           user: resp.user,
@@ -155,24 +196,32 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
         setAuth((p) => ({ ...p, isLoading: false }));
         const msg = err?.response?.data?.error ?? "Registration failed";
         setError(msg);
-        console.log(msg); // Fixed from console.log(error)
         options?.onError?.(msg);
         throw err;
       }
     },
     [options]
   );
+
   const login = useCallback(
-    async (data: LoginRequest) => {
+    async (data: LoginRequestWithRemember) => {
       setAuth((p) => ({ ...p, isLoading: true }));
       try {
-        const resp = await userService.login(data);
+        // Extract rememberMe, default to false
+        const { rememberMe = false, ...loginData } = data;
+
+        const resp = await userService.login(loginData);
         const token = resp.token;
-        localStorage.setItem("token", token);
+
+        // Store token based on rememberMe preference
+        storeToken(token, rememberMe);
+
         setAuth((prev) => ({ ...prev, token, isAuthenticated: true }));
-        // Try to fetch user (via token payload or "me" endpoint)
+
+        // Try to fetch user
         const payload = parseJwtPayload(token);
         const userId = payload?.user_id ?? payload?.sub ?? payload?.id ?? null;
+
         if (userId) {
           try {
             const u = await userService.getProfile(userId);
@@ -180,11 +229,10 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
             options?.onLogin?.(u);
             return;
           } catch (err) {
-            // swallow and continue to notify onLogin with null
             console.warn("Failed to fetch profile after login:", err);
           }
         }
-        // If we couldn't fetch the user, finish login but notify without user
+
         setAuth((prev) => ({ ...prev, isLoading: false }));
         options?.onLogin?.(null);
       } catch (err: any) {
@@ -197,8 +245,9 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     },
     [options]
   );
+
   const logout = useCallback(() => {
-    localStorage.removeItem("token");
+    removeToken();
     setAuth({
       user: null,
       token: null,
@@ -208,6 +257,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     clearUsers();
     options?.onLogout?.();
   }, [options, clearUsers]);
+
   const forgotPassword = useCallback(
     async (data: ForgotPasswordRequest) => {
       try {
@@ -222,6 +272,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     },
     [options]
   );
+
   const resetPassword = useCallback(
     async (data: ResetPasswordRequest) => {
       try {
@@ -235,6 +286,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     },
     [options]
   );
+
   const validateResetToken = useCallback(
     async (token: string) => {
       try {
@@ -248,6 +300,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     },
     [options]
   );
+
   /* ---------- User management ---------- */
   const getAllUsers = useCallback(async () => {
     setUsers((p) => ({ ...p, isLoading: true }));
@@ -262,11 +315,11 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
       throw err;
     }
   }, [options]);
+
   const getProfile = useCallback(
     async (id: string) => {
       try {
         const u = await userService.getProfile(id);
-        // update auth if same user
         setAuth((prev) => {
           if (prev.user?.user_id === id || prev.user === null) {
             return { ...prev, user: u };
@@ -283,6 +336,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     },
     [options]
   );
+
   const updateProfile = useCallback(
     async (id: string, data: UpdateProfileRequest) => {
       try {
@@ -303,6 +357,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     },
     [options]
   );
+
   const deleteAccount = useCallback(
     async (id: string) => {
       try {
@@ -313,8 +368,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
         }));
         setAuth((prev) => {
           if (prev.user?.user_id === id) {
-            // If current user deleted their account -> log out
-            localStorage.removeItem("token");
+            removeToken();
             return {
               user: null,
               token: null,
@@ -333,11 +387,11 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     },
     [options]
   );
+
   const promoteUser = useCallback(
     async (id: string) => {
       try {
         await userService.promoteUser(id);
-        // simple approach: re-fetch users
         await getAllUsers();
       } catch (err: any) {
         const msg = err?.response?.data?.error ?? "Failed to promote user";
@@ -348,6 +402,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     },
     [getAllUsers, options]
   );
+
   /* ---------- Return ---------- */
   return {
     auth,
@@ -367,20 +422,22 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     clearUsers,
   };
 };
+
 /* ---------- Provider & useAuth ---------- */
 export interface AuthProviderProps {
   children: ReactNode;
   options?: UseUsersOptions;
 }
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({
   children,
   options,
 }) => {
   const auth = useUsers(options);
-  // memoize to avoid re-render storms
   const value = useMemo(() => auth, [auth]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
 export const useAuth = (): UseUsersReturn => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within an AuthProvider");

@@ -7,6 +7,7 @@ import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import { useUsers } from "../../hooks/useUsers";
 import Alert from "../ui/alert/Alert";
+import { useLocation } from "../../hooks/useLocation";
 
 type FormErrors = {
   firstName?: string;
@@ -41,6 +42,13 @@ export default function SignUpForm() {
   const firstNameInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
+  // Use the location hook
+  const {
+    location,
+    isLoading: locationLoading,
+    error: locationError,
+  } = useLocation();
+
   const { register, auth } = useUsers({
     onLogin: (user) => {
       setAlert({
@@ -72,6 +80,14 @@ export default function SignUpForm() {
   useEffect(() => {
     firstNameInputRef.current?.focus();
   }, []);
+
+  // Show location detection status
+  useEffect(() => {
+    if (locationError) {
+      console.warn("Location detection failed:", locationError);
+      // You can show a subtle warning or just ignore it since we have a fallback
+    }
+  }, [locationError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -144,12 +160,27 @@ export default function SignUpForm() {
 
     setErrors({});
     try {
+      // Use detected location or require it (since it's mandatory)
+      if (!location) {
+        setAlert({
+          variant: "error",
+          title: "Location Required",
+          message:
+            "We couldn't detect your location. Please refresh and try again.",
+        });
+        return;
+      }
+
+      const userLocation = location.city
+        ? `${location.city}, ${location.country}`
+        : location.country;
+
       await register({
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim(),
         email: formData.email.trim(),
         password: formData.password,
-        location: "Unknown", // Default location, can be updated later
+        location: userLocation,
       });
     } catch (error) {
       // Error is handled by the hook's onError callback
@@ -187,11 +218,21 @@ export default function SignUpForm() {
     return errors;
   };
 
+  // Show a subtle loading indicator for location detection
+  const isFormLoading = auth.isLoading || locationLoading;
+
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
       {alert && (
         <Alert variant={alert.variant} title={alert.title}>
           {alert.message}
+        </Alert>
+      )}
+      {locationError && !location && !locationLoading && (
+        <Alert variant="warning" title="Location Detection Failed">
+          We couldn't detect your location automatically. Please check your
+          internet connection and refresh the page to try again. Location is
+          required for registration.
         </Alert>
       )}
       <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
@@ -212,12 +253,31 @@ export default function SignUpForm() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Enter your email and password to sign up!
             </p>
+            {location && (
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <span className="inline-flex items-center gap-1">
+                  <svg
+                    className="w-3 h-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Registering from: {location.city ? `${location.city}, ` : ""}
+                  {location.country}
+                </span>
+              </p>
+            )}
           </div>
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
               <button
                 className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={auth.isLoading}
+                disabled={isFormLoading}
               >
                 <svg
                   width="20"
@@ -243,11 +303,11 @@ export default function SignUpForm() {
                     fill="#EB4335"
                   />
                 </svg>
-                {auth.isLoading ? "Loading..." : "Sign up with Google"}
+                {isFormLoading ? "Loading..." : "Sign up with Google"}
               </button>
               <button
                 className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={auth.isLoading}
+                disabled={isFormLoading}
               >
                 <svg
                   width="21"
@@ -259,7 +319,7 @@ export default function SignUpForm() {
                 >
                   <path d="M15.6705 1.875H18.4272L12.4047 8.75833L19.4897 18.125H13.9422L9.59717 12.4442L4.62554 18.125H1.86721L8.30887 10.7625L1.51221 1.875H7.20054L11.128 7.0675L15.6705 1.875ZM14.703 16.475H16.2305L6.37054 3.43833H4.73137L14.703 16.475Z" />
                 </svg>
-                {auth.isLoading ? "Loading..." : "Sign up with X"}
+                {isFormLoading ? "Loading..." : "Sign up with X"}
               </button>
             </div>
             <div className="relative py-3 sm:py-5">
@@ -273,7 +333,7 @@ export default function SignUpForm() {
               </div>
             </div>
             <form onSubmit={handleSubmit}>
-              <fieldset disabled={auth.isLoading} className="space-y-5">
+              <fieldset disabled={isFormLoading} className="space-y-5">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   {/* First Name */}
                   <div className="sm:col-span-1">
@@ -444,9 +504,13 @@ export default function SignUpForm() {
                     type="submit"
                     className="w-full"
                     size="sm"
-                    disabled={auth.isLoading}
+                    disabled={isFormLoading || !location}
                   >
-                    {auth.isLoading ? "Creating Account..." : "Sign Up"}
+                    {isFormLoading
+                      ? "Creating Account..."
+                      : !location
+                        ? "Detecting Location..."
+                        : "Sign Up"}
                   </Button>
                 </div>
               </fieldset>

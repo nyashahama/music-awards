@@ -5,11 +5,17 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
-import { useUsers } from "../../hooks/useUsers.tsx";
+import { useUsers } from "../../hooks/useUsers";
+import Alert from "../ui/alert/Alert";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [alert, setAlert] = useState<{
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -17,22 +23,36 @@ export default function SignInForm() {
 
   const { login, auth } = useUsers({
     onLogin: () => {
-      //navigate("/");
-      window.location.href = "/"
+      setAlert({
+        variant: "success",
+        title: "Login Successful",
+        message: "You are now logged in.",
+      });
+
+      // Delay navigation so user can see the alert
+      setTimeout(() => {
+        setTimeout(() => navigate("/"), 1000);
+      }, 1000);
     },
+
     onError: (error) => {
       console.error("Login error:", error);
-      // You can add toast notifications here
-    }
+
+      setAlert({
+        variant: "error",
+        title: "Login Failed",
+        message: error || "Something went wrong.",
+      });
+    },
   });
 
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -41,7 +61,7 @@ export default function SignInForm() {
     try {
       await login({
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       });
     } catch (error) {
       // Error is handled by the hook's onError callback
@@ -50,6 +70,11 @@ export default function SignInForm() {
 
   return (
     <div className="flex flex-col flex-1">
+      {alert && (
+        <Alert variant={alert.variant} title={alert.title}>
+          {alert.message}
+        </Alert>
+      )}
       <div className="w-full max-w-md pt-10 mx-auto">
         <Link
           to="/"
@@ -71,10 +96,7 @@ export default function SignInForm() {
           </div>
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
-              <button
-                type="button"
-                className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
-              >
+              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
                 <svg
                   width="20"
                   height="20"
@@ -101,10 +123,7 @@ export default function SignInForm() {
                 </svg>
                 Sign in with Google
               </button>
-              <button
-                type="button"
-                className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
-              >
+              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
                 <svg
                   width="21"
                   className="fill-current"
@@ -135,12 +154,12 @@ export default function SignInForm() {
                     Email <span className="text-error-500">*</span>{" "}
                   </Label>
                   <Input
+                    placeholder="info@gmail.com"
                     name="email"
                     type="email"
                     value={formData.email}
-                    onChange={handleChange}
-                    placeholder="info@gmail.com"
                     required
+                    onChange={handleChange}
                   />
                 </div>
                 <div>
@@ -149,12 +168,12 @@ export default function SignInForm() {
                   </Label>
                   <div className="relative">
                     <Input
-                      name="password"
                       type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={handleChange}
                       placeholder="Enter your password"
+                      name="password"
+                      value={formData.password}
                       required
+                      onChange={handleChange}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -172,14 +191,14 @@ export default function SignInForm() {
                   <div className="flex items-center gap-3">
                     <Checkbox
                       checked={isChecked}
-                      onChange={setIsChecked}
+                      onChange={(e) => setIsChecked(e.target.checked)}
                     />
                     <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
                       Keep me logged in
                     </span>
                   </div>
                   <Link
-                    to="/forgot-password"
+                    to="/reset-password"
                     className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
                   >
                     Forgot password?
@@ -187,7 +206,6 @@ export default function SignInForm() {
                 </div>
                 <div>
                   <Button
-                    type="submit"
                     className="w-full"
                     size="sm"
                     disabled={auth.isLoading}

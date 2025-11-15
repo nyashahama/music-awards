@@ -85,19 +85,30 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     isAuthenticated: false,
     isLoading: false,
   });
-  const [users, setUsers] = useState<UsersState>({ users: [], isLoading: false });
+  const [users, setUsers] = useState<UsersState>({
+    users: [],
+    isLoading: false,
+  });
   const [error, setError] = useState<string | null>(null);
   const clearError = useCallback(() => setError(null), []);
-  const clearUsers = useCallback(() => setUsers({ users: [], isLoading: false }), []);
+  const clearUsers = useCallback(
+    () => setUsers({ users: [], isLoading: false }),
+    []
+  );
   // Initialize token from localStorage and try to fetch current user
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) return;
-    setAuth((prev) => ({ ...prev, token, isAuthenticated: true, isLoading: true }));
+    setAuth((prev) => ({
+      ...prev,
+      token,
+      isAuthenticated: true,
+      isLoading: true,
+    }));
     // Option A: If your backend has a /me endpoint, use that instead of parsing token
     const payload = parseJwtPayload(token);
-    const userId =
-      payload?.user_id ?? payload?.sub ?? payload?.id ?? null;
+    const userId = payload?.user_id ?? payload?.sub ?? payload?.id ?? null;
     if (userId) {
       userService
         .getProfile(userId)
@@ -108,13 +119,19 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
         .catch(() => {
           // couldn't fetch user for token - clear token
           localStorage.removeItem("token");
-          setAuth({ user: null, token: null, isAuthenticated: false, isLoading: false });
+          setAuth({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
           options?.onError?.("Failed to fetch profile for saved token");
         });
     } else {
       // If we cannot find a user id in token, just stop loading and allow explicit fetch later
       setAuth((prev) => ({ ...prev, isLoading: false }));
     }
+    console.log("see the id?" + payload.user_id);
     // only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -123,8 +140,17 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     async (data: RegisterRequest) => {
       setAuth((p) => ({ ...p, isLoading: true }));
       try {
-        const user = await userService.register(data);
-        setAuth((prev) => ({ ...prev, user, isAuthenticated: true, isLoading: false }));
+        const resp = await userService.register(data);
+        const token = resp.token; // backend returns token
+        console.log("token", token);
+        localStorage.setItem("token", token);
+        setAuth((prev) => ({
+          ...prev,
+          user: resp.user,
+          token,
+          isAuthenticated: true,
+          isLoading: false,
+        }));
       } catch (err: any) {
         setAuth((p) => ({ ...p, isLoading: false }));
         const msg = err?.response?.data?.error ?? "Registration failed";
@@ -173,7 +199,12 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
   );
   const logout = useCallback(() => {
     localStorage.removeItem("token");
-    setAuth({ user: null, token: null, isAuthenticated: false, isLoading: false });
+    setAuth({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
     clearUsers();
     options?.onLogout?.();
   }, [options, clearUsers]);
@@ -182,7 +213,8 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
       try {
         await userService.forgotPassword(data);
       } catch (err: any) {
-        const msg = err?.response?.data?.error ?? "Password reset request failed";
+        const msg =
+          err?.response?.data?.error ?? "Password reset request failed";
         setError(msg);
         options?.onError?.(msg);
         throw err;
@@ -259,7 +291,9 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
           ...prev,
           users: prev.users.map((x) => (x.user_id === id ? updated : x)),
         }));
-        setAuth((prev) => (prev.user?.user_id === id ? { ...prev, user: updated } : prev));
+        setAuth((prev) =>
+          prev.user?.user_id === id ? { ...prev, user: updated } : prev
+        );
       } catch (err: any) {
         const msg = err?.response?.data?.error ?? "Failed to update profile";
         setError(msg);
@@ -273,12 +307,20 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     async (id: string) => {
       try {
         await userService.deleteAccount(id);
-        setUsers((prev) => ({ ...prev, users: prev.users.filter((u) => u.user_id !== id) }));
+        setUsers((prev) => ({
+          ...prev,
+          users: prev.users.filter((u) => u.user_id !== id),
+        }));
         setAuth((prev) => {
           if (prev.user?.user_id === id) {
             // If current user deleted their account -> log out
             localStorage.removeItem("token");
-            return { user: null, token: null, isAuthenticated: false, isLoading: false };
+            return {
+              user: null,
+              token: null,
+              isAuthenticated: false,
+              isLoading: false,
+            };
           }
           return prev;
         });
@@ -330,7 +372,10 @@ export interface AuthProviderProps {
   children: ReactNode;
   options?: UseUsersOptions;
 }
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children, options }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({
+  children,
+  options,
+}) => {
   const auth = useUsers(options);
   // memoize to avoid re-render storms
   const value = useMemo(() => auth, [auth]);

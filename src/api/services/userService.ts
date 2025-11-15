@@ -12,7 +12,8 @@ export interface User {
 }
 
 export interface RegisterRequest {
-  username: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
   location: string;
@@ -28,7 +29,8 @@ export interface LoginResponse {
 }
 
 export interface UpdateProfileRequest {
-  username?: string;
+  first_name?: string;
+  last_name?: string;
   email?: string;
   password?: string;
   location?: string;
@@ -66,8 +68,13 @@ class UserService {
   private readonly usersPath = "/profile";
 
   // Auth endpoints
-  async register(registerRequest: RegisterRequest): Promise<User> {
-    const response = await apiClient.post<User>(`/register`, registerRequest);
+  async register(
+    registerRequest: RegisterRequest
+  ): Promise<{ user: User; token: string }> {
+    const response = await apiClient.post<{ user: User; token: string }>(
+      `/register`,
+      registerRequest
+    );
     return response.data;
   }
 

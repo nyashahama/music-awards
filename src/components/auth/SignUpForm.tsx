@@ -1,15 +1,199 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
+import Button from "../ui/button/Button";
+import { useUsers } from "../../hooks/useUsers";
+import Alert from "../ui/alert/Alert";
+
+type FormErrors = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  terms?: string;
+};
 
 export default function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [alert, setAlert] = useState<{
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState({
+    firstName: false,
+    lastName: false,
+    email: false,
+    password: false,
+  });
+
+  const firstNameInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+
+  const { register, auth } = useUsers({
+    onLogin: (user) => {
+      setAlert({
+        variant: "success",
+        title: "Registration Successful",
+        message: "Your account has been created successfully.",
+      });
+
+      // Auto-dismiss and navigate
+      setTimeout(() => {
+        setAlert(null);
+        navigate("/signin");
+      }, 1500);
+    },
+    onError: (error) => {
+      console.error("Registration error:", error);
+      setAlert({
+        variant: "error",
+        title: "Registration Failed",
+        message: error || "Something went wrong during registration.",
+      });
+
+      // Auto-dismiss error alerts after 5 seconds
+      setTimeout(() => setAlert(null), 5000);
+    },
+  });
+
+  // Auto-focus first name field on mount
+  useEffect(() => {
+    firstNameInputRef.current?.focus();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    const field = name as keyof FormErrors;
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: "",
+      }));
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    const field = name as keyof typeof touched;
+
+    setTouched((prev) => ({
+      ...prev,
+      [field]: true,
+    }));
+
+    // Validate on blur for better UX
+    if (touched[field]) {
+      const validationErrors = validateForm();
+      if (validationErrors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: validationErrors[field],
+        }));
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Mark all fields as touched
+    setTouched({
+      firstName: true,
+      lastName: true,
+      email: true,
+      password: true,
+    });
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      // Focus first error field
+      if (validationErrors.firstName) {
+        firstNameInputRef.current?.focus();
+      } else if (validationErrors.email) {
+        const emailInput = document.getElementById("email") as HTMLInputElement;
+        emailInput?.focus();
+      }
+      return;
+    }
+
+    if (!isChecked) {
+      setErrors((prev) => ({
+        ...prev,
+        terms: "You must agree to the Terms and Conditions and Privacy Policy",
+      }));
+      return;
+    }
+
+    setErrors({});
+    try {
+      await register({
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        location: "Unknown", // Default location, can be updated later
+      });
+    } catch (error) {
+      // Error is handled by the hook's onError callback
+    }
+  };
+
+  const validateForm = (): FormErrors => {
+    const errors: FormErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.firstName.trim()) {
+      errors.firstName = "First name is required";
+    } else if (formData.firstName.trim().length < 2) {
+      errors.firstName = "First name must be at least 2 characters";
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.lastName = "Last name is required";
+    } else if (formData.lastName.trim().length < 2) {
+      errors.lastName = "Last name must be at least 2 characters";
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email.trim())) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.password) {
+      errors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    }
+
+    return errors;
+  };
+
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
+      {alert && (
+        <Alert variant={alert.variant} title={alert.title}>
+          {alert.message}
+        </Alert>
+      )}
       <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
         <Link
           to="/"
@@ -31,7 +215,10 @@ export default function SignUpForm() {
           </div>
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+              <button
+                className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={auth.isLoading}
+              >
                 <svg
                   width="20"
                   height="20"
@@ -56,9 +243,12 @@ export default function SignUpForm() {
                     fill="#EB4335"
                   />
                 </svg>
-                Sign up with Google
+                {auth.isLoading ? "Loading..." : "Sign up with Google"}
               </button>
-              <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10">
+              <button
+                className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-gray-700 transition-colors bg-gray-100 rounded-lg px-7 hover:bg-gray-200 hover:text-gray-800 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={auth.isLoading}
+              >
                 <svg
                   width="21"
                   className="fill-current"
@@ -69,7 +259,7 @@ export default function SignUpForm() {
                 >
                   <path d="M15.6705 1.875H18.4272L12.4047 8.75833L19.4897 18.125H13.9422L9.59717 12.4442L4.62554 18.125H1.86721L8.30887 10.7625L1.51221 1.875H7.20054L11.128 7.0675L15.6705 1.875ZM14.703 16.475H16.2305L6.37054 3.43833H4.73137L14.703 16.475Z" />
                 </svg>
-                Sign up with X
+                {auth.isLoading ? "Loading..." : "Sign up with X"}
               </button>
             </div>
             <div className="relative py-3 sm:py-5">
@@ -82,37 +272,72 @@ export default function SignUpForm() {
                 </span>
               </div>
             </div>
-            <form>
-              <div className="space-y-5">
+            <form onSubmit={handleSubmit}>
+              <fieldset disabled={auth.isLoading} className="space-y-5">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  {/* <!-- First Name --> */}
+                  {/* First Name */}
                   <div className="sm:col-span-1">
-                    <Label>
+                    <Label htmlFor="firstName">
                       First Name<span className="text-error-500">*</span>
                     </Label>
                     <Input
+                      ref={firstNameInputRef}
                       type="text"
-                      id="fname"
-                      name="fname"
+                      id="firstName"
+                      name="firstName"
                       placeholder="Enter your first name"
+                      value={formData.firstName}
+                      required
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      aria-invalid={!!errors.firstName}
+                      aria-describedby={
+                        errors.firstName ? "firstName-error" : undefined
+                      }
                     />
+                    {errors.firstName && (
+                      <p
+                        id="firstName-error"
+                        className="mt-1 text-sm text-error-500"
+                        role="alert"
+                      >
+                        {errors.firstName}
+                      </p>
+                    )}
                   </div>
-                  {/* <!-- Last Name --> */}
+                  {/* Last Name */}
                   <div className="sm:col-span-1">
-                    <Label>
+                    <Label htmlFor="lastName">
                       Last Name<span className="text-error-500">*</span>
                     </Label>
                     <Input
                       type="text"
-                      id="lname"
-                      name="lname"
+                      id="lastName"
+                      name="lastName"
                       placeholder="Enter your last name"
+                      value={formData.lastName}
+                      required
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      aria-invalid={!!errors.lastName}
+                      aria-describedby={
+                        errors.lastName ? "lastName-error" : undefined
+                      }
                     />
+                    {errors.lastName && (
+                      <p
+                        id="lastName-error"
+                        className="mt-1 text-sm text-error-500"
+                        role="alert"
+                      >
+                        {errors.lastName}
+                      </p>
+                    )}
                   </div>
                 </div>
-                {/* <!-- Email --> */}
+                {/* Email */}
                 <div>
-                  <Label>
+                  <Label htmlFor="email">
                     Email<span className="text-error-500">*</span>
                   </Label>
                   <Input
@@ -120,38 +345,80 @@ export default function SignUpForm() {
                     id="email"
                     name="email"
                     placeholder="Enter your email"
+                    value={formData.email}
+                    required
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
                   />
+                  {errors.email && (
+                    <p
+                      id="email-error"
+                      className="mt-1 text-sm text-error-500"
+                      role="alert"
+                    >
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
-                {/* <!-- Password --> */}
+                {/* Password */}
                 <div>
-                  <Label>
+                  <Label htmlFor="password">
                     Password<span className="text-error-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
+                      id="password"
                       placeholder="Enter your password"
                       type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      required
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      aria-invalid={!!errors.password}
+                      aria-describedby={
+                        errors.password ? "password-error" : undefined
+                      }
                     />
-                    <span
+                    <button
+                      type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                      className="absolute z-30 -translate-y-1/2 right-4 top-1/2"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      tabIndex={-1}
                     >
                       {showPassword ? (
                         <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
                       ) : (
                         <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
                       )}
-                    </span>
+                    </button>
                   </div>
+                  {errors.password && (
+                    <p
+                      id="password-error"
+                      className="mt-1 text-sm text-error-500"
+                      role="alert"
+                    >
+                      {errors.password}
+                    </p>
+                  )}
                 </div>
-                {/* <!-- Checkbox --> */}
+                {/* Checkbox */}
                 <div className="flex items-center gap-3">
                   <Checkbox
-                    className="w-5 h-5"
+                    id="terms"
                     checked={isChecked}
                     onChange={setIsChecked}
                   />
-                  <p className="inline-block font-normal text-gray-500 dark:text-gray-400">
+                  <label
+                    htmlFor="terms"
+                    className="inline-block font-normal text-gray-500 dark:text-gray-400"
+                  >
                     By creating an account means you agree to the{" "}
                     <span className="text-gray-800 dark:text-white/90">
                       Terms and Conditions,
@@ -160,15 +427,29 @@ export default function SignUpForm() {
                     <span className="text-gray-800 dark:text-white">
                       Privacy Policy
                     </span>
+                  </label>
+                </div>
+                {errors.terms && (
+                  <p
+                    id="terms-error"
+                    className="text-sm text-error-500"
+                    role="alert"
+                  >
+                    {errors.terms}
                   </p>
-                </div>
-                {/* <!-- Button --> */}
+                )}
+                {/* Button */}
                 <div>
-                  <button className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600">
-                    Sign Up
-                  </button>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    size="sm"
+                    disabled={auth.isLoading}
+                  >
+                    {auth.isLoading ? "Creating Account..." : "Sign Up"}
+                  </Button>
                 </div>
-              </div>
+              </fieldset>
             </form>
 
             <div className="mt-5">

@@ -192,6 +192,9 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
           isAuthenticated: true,
           isLoading: false,
         }));
+
+        // Call onLogin callback after successful registration
+        options?.onLogin?.(resp.user);
       } catch (err: any) {
         setAuth((p) => ({ ...p, isLoading: false }));
         const msg = err?.response?.data?.error ?? "Registration failed";

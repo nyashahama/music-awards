@@ -15,6 +15,7 @@ type FormErrors = {
   email?: string;
   password?: string;
   terms?: string;
+  location?: string;
 };
 
 export default function SignUpForm() {
@@ -30,6 +31,7 @@ export default function SignUpForm() {
     lastName: "",
     email: "",
     password: "",
+    manualLocation: "", // Add manual location field
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState({
@@ -37,6 +39,7 @@ export default function SignUpForm() {
     lastName: false,
     email: false,
     password: false,
+    manualLocation: false,
   });
 
   const firstNameInputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +50,7 @@ export default function SignUpForm() {
     location,
     isLoading: locationLoading,
     error: locationError,
+    detectionFailed,
   } = useLocation();
 
   const { register, auth } = useUsers({
@@ -57,7 +61,6 @@ export default function SignUpForm() {
         message: "Your account has been created successfully.",
       });
 
-      // Auto-dismiss and navigate
       setTimeout(() => {
         setAlert(null);
         navigate("/signin");
@@ -70,24 +73,13 @@ export default function SignUpForm() {
         title: "Registration Failed",
         message: error || "Something went wrong during registration.",
       });
-
-      // Auto-dismiss error alerts after 5 seconds
       setTimeout(() => setAlert(null), 5000);
     },
   });
 
-  // Auto-focus first name field on mount
   useEffect(() => {
     firstNameInputRef.current?.focus();
   }, []);
-
-  // Show location detection status
-  useEffect(() => {
-    if (locationError) {
-      console.warn("Location detection failed:", locationError);
-      // You can show a subtle warning or just ignore it since we have a fallback
-    }
-  }, [locationError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -114,7 +106,6 @@ export default function SignUpForm() {
       [field]: true,
     }));
 
-    // Validate on blur for better UX
     if (touched[field]) {
       const validationErrors = validateForm();
       if (validationErrors[field]) {
@@ -129,18 +120,17 @@ export default function SignUpForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Mark all fields as touched
     setTouched({
       firstName: true,
       lastName: true,
       email: true,
       password: true,
+      manualLocation: true,
     });
 
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      // Focus first error field
       if (validationErrors.firstName) {
         firstNameInputRef.current?.focus();
       } else if (validationErrors.email) {
@@ -160,20 +150,18 @@ export default function SignUpForm() {
 
     setErrors({});
     try {
-      // Use detected location or require it (since it's mandatory)
-      if (!location) {
-        setAlert({
-          variant: "error",
-          title: "Location Required",
-          message:
-            "We couldn't detect your location. Please refresh and try again.",
-        });
-        return;
-      }
+      // Determine user location: auto-detected OR manual entry OR "Unknown"
+      let userLocation = "Unknown";
 
-      const userLocation = location.city
-        ? `${location.city}, ${location.country}`
-        : location.country;
+      if (location) {
+        // Auto-detected location
+        userLocation = location.city
+          ? `${location.city}, ${location.country}`
+          : location.country;
+      } else if (formData.manualLocation.trim()) {
+        // User manually entered location
+        userLocation = formData.manualLocation.trim();
+      }
 
       await register({
         first_name: formData.firstName.trim(),
@@ -215,11 +203,16 @@ export default function SignUpForm() {
       errors.password = "Password must be at least 6 characters";
     }
 
+    // Only require manual location if auto-detection failed
+    if (detectionFailed && !location && !formData.manualLocation.trim()) {
+      errors.location = "Please enter your location";
+    }
+
     return errors;
   };
 
-  // Show a subtle loading indicator for location detection
   const isFormLoading = auth.isLoading || locationLoading;
+  const showManualLocationField = detectionFailed && !location;
 
   return (
     <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
@@ -228,13 +221,7 @@ export default function SignUpForm() {
           {alert.message}
         </Alert>
       )}
-      {locationError && !location && !locationLoading && (
-        <Alert variant="warning" title="Location Detection Failed">
-          We couldn't detect your location automatically. Please check your
-          internet connection and refresh the page to try again. Location is
-          required for registration.
-        </Alert>
-      )}
+
       <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
         <Link
           to="/"
@@ -244,6 +231,7 @@ export default function SignUpForm() {
           Back to dashboard
         </Link>
       </div>
+
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-8">
@@ -273,6 +261,7 @@ export default function SignUpForm() {
               </p>
             )}
           </div>
+
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
               <button
@@ -322,6 +311,7 @@ export default function SignUpForm() {
                 {isFormLoading ? "Loading..." : "Sign up with X"}
               </button>
             </div>
+
             <div className="relative py-3 sm:py-5">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
@@ -332,6 +322,7 @@ export default function SignUpForm() {
                 </span>
               </div>
             </div>
+
             <form onSubmit={handleSubmit}>
               <fieldset disabled={isFormLoading} className="space-y-5">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -395,6 +386,7 @@ export default function SignUpForm() {
                     )}
                   </div>
                 </div>
+
                 {/* Email */}
                 <div>
                   <Label htmlFor="email">
@@ -422,6 +414,7 @@ export default function SignUpForm() {
                     </p>
                   )}
                 </div>
+
                 {/* Password */}
                 <div>
                   <Label htmlFor="password">
@@ -468,6 +461,43 @@ export default function SignUpForm() {
                     </p>
                   )}
                 </div>
+
+                {/* Manual Location Field - Only show if auto-detection failed */}
+                {showManualLocationField && (
+                  <div>
+                    <Label htmlFor="manualLocation">
+                      Location<span className="text-error-500">*</span>
+                    </Label>
+                    <Input
+                      type="text"
+                      id="manualLocation"
+                      name="manualLocation"
+                      placeholder="e.g., Johannesburg, South Africa"
+                      value={formData.manualLocation}
+                      required
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      aria-invalid={!!errors.location}
+                      aria-describedby={
+                        errors.location ? "location-error" : undefined
+                      }
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      We couldn't detect your location automatically. Please
+                      enter your city and country.
+                    </p>
+                    {errors.location && (
+                      <p
+                        id="location-error"
+                        className="mt-1 text-sm text-error-500"
+                        role="alert"
+                      >
+                        {errors.location}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Checkbox */}
                 <div className="flex items-center gap-3">
                   <Checkbox
@@ -498,19 +528,16 @@ export default function SignUpForm() {
                     {errors.terms}
                   </p>
                 )}
+
                 {/* Button */}
                 <div>
                   <Button
                     type="submit"
                     className="w-full"
                     size="sm"
-                    disabled={isFormLoading || !location}
+                    disabled={isFormLoading}
                   >
-                    {isFormLoading
-                      ? "Creating Account..."
-                      : !location
-                        ? "Detecting Location..."
-                        : "Sign Up"}
+                    {isFormLoading ? "Creating Account..." : "Sign Up"}
                   </Button>
                 </div>
               </fieldset>

@@ -3,14 +3,82 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import { useUsers } from "../../hooks/useUsers";
+import { useEffect, useState } from "react";
 
 export default function UserInfoCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+  const { auth, updateProfile } = useUsers();
+  const { user } = auth;
+
+  //data for updating
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    location: "",
+  });
+
+  //initialize form data
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        location: user.location || "",
+      });
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user) {
+      return;
+    }
+
+    try {
+      await updateProfile(user.user_id, {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        location: formData.location,
+      });
+      console.log("Saving changes...");
+      closeModal();
+    } catch (error) {
+      console.error("Failed to update profile", error);
+    }
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Format the created date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  if (!user) {
+    return (
+      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+        <div className="flex items-center justify-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">
+            Loading user information...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -25,7 +93,7 @@ export default function UserInfoCard() {
                 First Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Musharof
+                {user.first_name}
               </p>
             </div>
 
@@ -34,7 +102,7 @@ export default function UserInfoCard() {
                 Last Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Chowdhury
+                {user.last_name}
               </p>
             </div>
 
@@ -43,25 +111,43 @@ export default function UserInfoCard() {
                 Email address
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                randomuser@pimjo.com
+                {user.email}
               </p>
             </div>
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Phone
+                Role
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                +09 363 398 46
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90 capitalize">
+                {user.role}
               </p>
             </div>
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Bio
+                Location
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Team Manager
+                {user.location || "Not provided"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Available Votes
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user.available_votes}
+              </p>
+            </div>
+
+            <div className="lg:col-span-2">
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Member Since
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {formatDate(user.created_at)}
               </p>
             </div>
           </div>
@@ -100,7 +186,12 @@ export default function UserInfoCard() {
               Update your details to keep your profile up-to-date.
             </p>
           </div>
-          <form className="flex flex-col">
+          <form
+            className="flex flex-col"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+          >
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
               <div>
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
@@ -143,27 +234,83 @@ export default function UserInfoCard() {
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2 lg:col-span-1">
                     <Label>First Name</Label>
-                    <Input type="text" value="Musharof" />
+                    <Input
+                      id="first_name"
+                      name="first_name"
+                      type="text"
+                      value={formData.first_name}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Last Name</Label>
-                    <Input type="text" value="Chowdhury" />
+                    <Input
+                      id="last_name"
+                      name="last_name"
+                      type="text"
+                      value={formData.last_name}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Email Address</Label>
-                    <Input type="text" value="randomuser@pimjo.com" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="text"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>Phone</Label>
-                    <Input type="text" value="+09 363 398 46" />
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      name="location"
+                      type="text"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      placeholder="Enter your location"
+                    />
                   </div>
 
                   <div className="col-span-2">
-                    <Label>Bio</Label>
-                    <Input type="text" value="Team Manager" />
+                    <Label>Role</Label>
+                    <Input
+                      type="text"
+                      value={user.role}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Role cannot be changed from this interface
+                    </p>
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Available Votes</Label>
+                    <Input
+                      type="text"
+                      value={user.available_votes.toString()}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Available votes are managed by the system
+                    </p>
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Member Since</Label>
+                    <Input
+                      type="text"
+                      value={formatDate(user.created_at)}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
                   </div>
                 </div>
               </div>

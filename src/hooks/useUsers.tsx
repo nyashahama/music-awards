@@ -137,28 +137,30 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
 
   // Initialize token from storage and try to fetch current user
   useEffect(() => {
-    const token = getStoredToken();
-    if (!token) return;
+    const initializeAuth = async () => {
+      const token = getStoredToken();
+      if (!token) return;
 
-    setAuth((prev) => ({
-      ...prev,
-      token,
-      isAuthenticated: true,
-      isLoading: true,
-    }));
+      setAuth((prev) => ({
+        ...prev,
+        token,
+        isAuthenticated: true,
+        isLoading: true,
+      }));
 
-    const payload = parseJwtPayload(token);
-    const userId = payload?.user_id ?? payload?.sub ?? payload?.id ?? null;
+      const payload = parseJwtPayload(token);
+      const userId = payload?.user_id ?? payload?.sub ?? payload?.id ?? null;
 
-    if (userId) {
-      userService
-        .getProfile(userId)
-        .then((u) => {
-          setAuth((prev) => ({ ...prev, user: u, isLoading: false }));
-          options?.onLogin?.(u);
-        })
-        .catch(() => {
-          // couldn't fetch user for token - clear token
+      if (userId) {
+        try {
+          // Wait for the user data to come back
+          const userData = await userService.getProfile(userId);
+
+          // If we get here, it succeeded
+          setAuth((prev) => ({ ...prev, user: userData, isLoading: false }));
+          options?.onLogin?.(userData);
+        } catch (error) {
+          // If we get here, it failed
           removeToken();
           setAuth({
             user: null,
@@ -167,11 +169,13 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
             isLoading: false,
           });
           options?.onError?.("Failed to fetch profile for saved token");
-        });
-    } else {
-      setAuth((prev) => ({ ...prev, isLoading: false }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        }
+      } else {
+        setAuth((prev) => ({ ...prev, isLoading: false }));
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   /* ---------- Auth actions ---------- */

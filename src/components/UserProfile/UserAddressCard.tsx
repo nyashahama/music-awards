@@ -3,16 +3,110 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import { useAuth } from "../../hooks/useUsers";
+import { useEffect, useState } from "react";
+import Alert from "../ui/alert/Alert";
 
 export default function UserAddressCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+  const { auth, updateProfile } = useAuth();
+  const { user } = auth;
+
+  const [alert, setAlert] = useState<{
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
+
+  // State for address data
+  const [formData, setFormData] = useState({
+    country: "",
+    city_state: "",
+    postal_code: "",
+    tax_id: "",
+  });
+
+  // Initialize form data from user profile
+  useEffect(() => {
+    if (user) {
+      // Parse location string (e.g., "Johannesburg, South Africa")
+      const locationParts = user.location?.split(",") || [];
+      const city = locationParts[0]?.trim() || "";
+      const country = locationParts[1]?.trim() || "";
+
+      setFormData({
+        country: country || "",
+        city_state: city || "",
+        postal_code: "", // These fields might need to be added to your User model
+        tax_id: "",
+      });
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user) {
+      return;
+    }
+
+    try {
+      // Reconstruct location string from city and country
+      const updatedLocation =
+        formData.city_state && formData.country
+          ? `${formData.city_state}, ${formData.country}`
+          : formData.country || formData.city_state || user.location;
+
+      await updateProfile(user.user_id, {
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        location: updatedLocation,
+      });
+
+      console.log("Address updated successfully");
+      setAlert({
+        variant: "success",
+        title: "Update profile successful",
+        message: "Changes are now updated",
+      });
+      setTimeout(() => setAlert(null), 3000);
+      closeModal();
+    } catch (error) {
+      setAlert({
+        variant: "error",
+        title: "Update profile failed",
+        message: "failed to update changes",
+      });
+      console.error("Failed to update address", error);
+    }
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  if (!user) {
+    return (
+      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+        <div className="flex items-center justify-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">
+            Loading address information...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
+      {alert && (
+        <Alert variant={alert.variant} title={alert.title}>
+          {alert.message}
+        </Alert>
+      )}
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -26,7 +120,7 @@ export default function UserAddressCard() {
                   Country
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  United States.
+                  {formData.country || "Not provided"}
                 </p>
               </div>
 
@@ -35,7 +129,7 @@ export default function UserAddressCard() {
                   City/State
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  Phoenix, Arizona, United States.
+                  {formData.city_state || "Not provided"}
                 </p>
               </div>
 
@@ -44,7 +138,7 @@ export default function UserAddressCard() {
                   Postal Code
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  ERT 2489
+                  {formData.postal_code || "Not provided"}
                 </p>
               </div>
 
@@ -53,7 +147,7 @@ export default function UserAddressCard() {
                   TAX ID
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  AS4568384
+                  {formData.tax_id || "Not provided"}
                 </p>
               </div>
             </div>
@@ -82,6 +176,7 @@ export default function UserAddressCard() {
           </button>
         </div>
       </div>
+
       <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
         <div className="relative w-full p-4 overflow-y-auto bg-white no-scrollbar rounded-3xl dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
@@ -89,38 +184,94 @@ export default function UserAddressCard() {
               Edit Address
             </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Update your details to keep your profile up-to-date.
+              Update your address details to keep your profile up-to-date.
             </p>
           </div>
-          <form className="flex flex-col">
+          <form
+            className="flex flex-col"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }}
+          >
             <div className="px-2 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div>
-                  <Label>Country</Label>
-                  <Input type="text" value="United States" />
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    name="country"
+                    type="text"
+                    value={formData.country}
+                    onChange={handleInputChange}
+                    placeholder="e.g., South Africa"
+                  />
                 </div>
 
                 <div>
-                  <Label>City/State</Label>
-                  <Input type="text" value="Arizona, United States." />
+                  <Label htmlFor="city_state">City/State</Label>
+                  <Input
+                    id="city_state"
+                    name="city_state"
+                    type="text"
+                    value={formData.city_state}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Johannesburg, Gauteng"
+                  />
                 </div>
 
                 <div>
-                  <Label>Postal Code</Label>
-                  <Input type="text" value="ERT 2489" />
+                  <Label htmlFor="postal_code">Postal Code</Label>
+                  <Input
+                    id="postal_code"
+                    name="postal_code"
+                    type="text"
+                    value={formData.postal_code}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 2000"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    This field is currently display-only and not saved to your
+                    profile
+                  </p>
                 </div>
 
                 <div>
-                  <Label>TAX ID</Label>
-                  <Input type="text" value="AS4568384" />
+                  <Label htmlFor="tax_id">TAX ID</Label>
+                  <Input
+                    id="tax_id"
+                    name="tax_id"
+                    type="text"
+                    value={formData.tax_id}
+                    onChange={handleInputChange}
+                    placeholder="e.g., AS4568384"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    This field is currently display-only and not saved to your
+                    profile
+                  </p>
                 </div>
+              </div>
+
+              <div className="p-4 mt-6 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong>Note:</strong> Currently, only Country and City/State
+                  are saved to your profile's location field. Postal Code and
+                  TAX ID fields are for display purposes and will be added in a
+                  future update.
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-              <Button size="sm" variant="outline" onClick={closeModal}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={closeModal}
+                type="button"
+              >
                 Close
               </Button>
-              <Button size="sm" onClick={handleSave}>
+              <Button size="sm" type="submit">
                 Save Changes
               </Button>
             </div>

@@ -5,7 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
-import { useUsers } from "../../hooks/useUsers";
+import { useAuth } from "../../hooks/useUsers";
 import Alert from "../ui/alert/Alert";
 
 type FormErrors = {
@@ -36,8 +36,12 @@ export default function SignInForm() {
   const emailInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const { login, auth } = useUsers({
-    onLogin: () => {
+  // Use the context hook instead of useUsers directly
+  const { login, auth } = useAuth();
+
+  // Handle successful login
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.user) {
       setAlert({
         variant: "success",
         title: "Login Successful",
@@ -49,21 +53,8 @@ export default function SignInForm() {
         setAlert(null);
         navigate("/");
       }, 1500);
-    },
-
-    onError: (error) => {
-      console.error("Login error:", error);
-
-      setAlert({
-        variant: "error",
-        title: "Login Failed",
-        message: error || "Something went wrong.",
-      });
-
-      // Auto-dismiss error alerts after 5 seconds
-      setTimeout(() => setAlert(null), 5000);
-    },
-  });
+    }
+  }, [auth.isAuthenticated, auth.user, navigate]);
 
   // Auto-focus email field on mount
   useEffect(() => {
@@ -126,12 +117,20 @@ export default function SignInForm() {
     setErrors({});
     try {
       await login({
-        email: formData.email.trim(), // Trim whitespace
+        email: formData.email.trim(),
         password: formData.password,
-        rememberMe: isChecked, // Pass the remember me preference
+        rememberMe: isChecked,
       });
-    } catch (error) {
-      // Error is handled by the hook's onError callback
+    } catch (error: any) {
+      // Show error alert
+      setAlert({
+        variant: "error",
+        title: "Login Failed",
+        message: error?.response?.data?.error || "Something went wrong.",
+      });
+
+      // Auto-dismiss error alerts after 5 seconds
+      setTimeout(() => setAlert(null), 5000);
     }
   };
 

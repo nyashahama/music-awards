@@ -3,13 +3,20 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-import { useUsers } from "../../hooks/useUsers";
+import { useAuth } from "../../hooks/useUsers";
 import { useEffect, useState } from "react";
+import Alert from "../ui/alert/Alert";
 
 export default function UserInfoCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  const { auth, updateProfile } = useUsers();
+  const { auth, updateProfile } = useAuth();
   const { user } = auth;
+
+  const [alert, setAlert] = useState<{
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
 
   //data for updating
   const [formData, setFormData] = useState({
@@ -43,10 +50,22 @@ export default function UserInfoCard() {
         email: formData.email,
         location: formData.location,
       });
-      console.log("Saving changes...");
+      console.log("Updated profile succesfully");
+      setAlert({
+        variant: "success",
+        title: "Update profile successful",
+        message: "Changes are now updated",
+      });
+      setTimeout(() => setAlert(null), 3000);
+
       closeModal();
     } catch (error) {
       console.error("Failed to update profile", error);
+      setAlert({
+        variant: "error",
+        title: "Update profile failed",
+        message: "failed to update changes",
+      });
     }
   };
 
@@ -81,6 +100,11 @@ export default function UserInfoCard() {
 
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+      {alert && (
+        <Alert variant={alert.variant} title={alert.title}>
+          {alert.message}
+        </Alert>
+      )}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">

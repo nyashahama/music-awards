@@ -3,16 +3,95 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import { useAuth } from "../../hooks/useUsers";
+import { useEffect, useState } from "react";
+import Alert from "../ui/alert/Alert";
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+  const { auth, updateProfile } = useAuth();
+  const { user } = auth;
+
+  const [alert, setAlert] = useState<{
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
+
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    location: "",
+  });
+
+  //initialize form data
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        location: user.location || "",
+      });
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user) {
+      return;
+    }
+
+    try {
+      await updateProfile(user.user_id, {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        location: formData.location,
+      });
+      console.log("updates were succesful");
+      setAlert({
+        variant: "success",
+        title: "Update profile successful",
+        message: "Changes are now updated",
+      });
+      setTimeout(() => setAlert(null), 3000);
+      closeModal();
+    } catch (error) {
+      console.log("Failed to update");
+      setAlert({
+        variant: "error",
+        title: "Update profile failed",
+        message: "failed to update changes",
+      });
+      setTimeout(() => setAlert(null), 3000);
+    }
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Format the created date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   return (
     <>
+      {alert && (
+        <Alert variant={alert.variant} title={alert.title}>
+          {alert.message}
+        </Alert>
+      )}
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
@@ -21,15 +100,15 @@ export default function UserMetaCard() {
             </div>
             <div className="order-3 xl:order-2">
               <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
-                Musharof Chowdhury
+                {user?.first_name}
               </h4>
               <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Team Manager
+                  {user?.role}
                 </p>
                 <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Arizona, United States
+                  {user?.location}
                 </p>
               </div>
             </div>
@@ -152,7 +231,12 @@ export default function UserMetaCard() {
               Update your details to keep your profile up-to-date.
             </p>
           </div>
-          <form className="flex flex-col">
+          <form
+            className="flex flex-col"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+          >
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
               <div>
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
@@ -195,27 +279,83 @@ export default function UserMetaCard() {
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2 lg:col-span-1">
                     <Label>First Name</Label>
-                    <Input type="text" value="Musharof" />
+                    <Input
+                      id="first_name"
+                      name="first_name"
+                      type="text"
+                      value={formData.first_name}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Last Name</Label>
-                    <Input type="text" value="Chowdhury" />
+                    <Input
+                      id="last_name"
+                      name="last_name"
+                      type="text"
+                      value={formData.last_name}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Email Address</Label>
-                    <Input type="text" value="randomuser@pimjo.com" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="text"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>Phone</Label>
-                    <Input type="text" value="+09 363 398 46" />
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      name="location"
+                      type="text"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      placeholder="Enter your location"
+                    />
                   </div>
 
                   <div className="col-span-2">
-                    <Label>Bio</Label>
-                    <Input type="text" value="Team Manager" />
+                    <Label>Role</Label>
+                    <Input
+                      type="text"
+                      value={user?.role}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Role cannot be changed from this interface
+                    </p>
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Available Votes</Label>
+                    <Input
+                      type="text"
+                      value={user?.available_votes.toString()}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Available votes are managed by the system
+                    </p>
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Member Since</Label>
+                    <Input
+                      type="text"
+                      value={formatDate(user?.created_at)}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
                   </div>
                 </div>
               </div>

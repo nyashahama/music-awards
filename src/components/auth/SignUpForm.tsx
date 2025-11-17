@@ -5,7 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
-import { useUsers } from "../../hooks/useUsers";
+import { useAuth } from "../../hooks/useUsers";
 import Alert from "../ui/alert/Alert";
 import { useLocation } from "../../hooks/useLocation";
 
@@ -31,7 +31,7 @@ export default function SignUpForm() {
     lastName: "",
     email: "",
     password: "",
-    manualLocation: "", // Add manual location field
+    manualLocation: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState({
@@ -53,8 +53,12 @@ export default function SignUpForm() {
     detectionFailed,
   } = useLocation();
 
-  const { register, auth } = useUsers({
-    onLogin: (user) => {
+  // Use the context hook instead of useUsers directly
+  const { register, auth } = useAuth();
+
+  // Handle successful registration
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.user) {
       setAlert({
         variant: "success",
         title: "Registration Successful",
@@ -65,17 +69,8 @@ export default function SignUpForm() {
         setAlert(null);
         navigate("/signin");
       }, 1500);
-    },
-    onError: (error) => {
-      console.error("Registration error:", error);
-      setAlert({
-        variant: "error",
-        title: "Registration Failed",
-        message: error || "Something went wrong during registration.",
-      });
-      setTimeout(() => setAlert(null), 5000);
-    },
-  });
+    }
+  }, [auth.isAuthenticated, auth.user, navigate]);
 
   useEffect(() => {
     firstNameInputRef.current?.focus();
@@ -170,8 +165,16 @@ export default function SignUpForm() {
         password: formData.password,
         location: userLocation,
       });
-    } catch (error) {
-      // Error is handled by the hook's onError callback
+    } catch (error: any) {
+      // Show error alert
+      setAlert({
+        variant: "error",
+        title: "Registration Failed",
+        message:
+          error?.response?.data?.error ||
+          "Something went wrong during registration.",
+      });
+      setTimeout(() => setAlert(null), 5000);
     }
   };
 

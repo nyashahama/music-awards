@@ -4,10 +4,10 @@ import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import { useAuth } from "../../hooks/useUsers";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import Alert from "../ui/alert/Alert";
 
-export default function UserInfoCard() {
+function UserInfoCard() {
   const { isOpen, openModal, closeModal } = useModal();
   const { auth, updateProfile } = useAuth();
   const { user } = auth;
@@ -353,3 +353,4 @@ export default function UserInfoCard() {
     </div>
   );
 }
+export default memo(UserInfoCard);

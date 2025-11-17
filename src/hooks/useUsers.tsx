@@ -6,6 +6,7 @@ import React, {
   ReactNode,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import {
   userService,
@@ -24,7 +25,10 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  lastFetched: number | null; // Add timestamp
 }
+
+const PROFILE_CACHE_DURATION = 5 * 60 * 1000;
 
 interface UsersState {
   users: User[];
@@ -49,7 +53,7 @@ export interface UseUsersReturn {
   validateResetToken: (token: string) => Promise<ValidateResetTokenResponse>;
   // User management actions
   getAllUsers: () => Promise<void>;
-  getProfile: (id: string) => Promise<User>;
+  getProfile: (id: string, forceRefresh?: boolean) => Promise<User>;
   updateProfile: (id: string, data: UpdateProfileRequest) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
   promoteUser: (id: string) => Promise<void>;
@@ -120,6 +124,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     token: null,
     isAuthenticated: false,
     isLoading: false,
+    lastFetched: null, // Fixed: should be null initially
   });
 
   const [users, setUsers] = useState<UsersState>({
@@ -128,6 +133,9 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
   });
 
   const [error, setError] = useState<string | null>(null);
+
+  // Add request deduplication
+  const pendingProfileRequests = useRef<Map<string, Promise<User>>>(new Map());
 
   const clearError = useCallback(() => setError(null), []);
   const clearUsers = useCallback(
@@ -153,10 +161,8 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
 
       if (userId) {
         try {
-          // Wait for the user data to come back
-          const userData = await userService.getProfile(userId);
-
-          // If we get here, it succeeded
+          // Use getProfile instead of direct service call to benefit from caching
+          const userData = await getProfile(userId);
           setAuth((prev) => ({ ...prev, user: userData, isLoading: false }));
           options?.onLogin?.(userData);
         } catch (error) {
@@ -167,6 +173,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
             token: null,
             isAuthenticated: false,
             isLoading: false,
+            lastFetched: null,
           });
           options?.onError?.("Failed to fetch profile for saved token");
         }
@@ -195,6 +202,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
           token,
           isAuthenticated: true,
           isLoading: false,
+          lastFetched: Date.now(),
         }));
 
         // Call onLogin callback after successful registration
@@ -231,7 +239,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
 
         if (userId) {
           try {
-            const u = await userService.getProfile(userId);
+            const u = await getProfile(userId);
             setAuth((prev) => ({ ...prev, user: u, isLoading: false }));
             options?.onLogin?.(u);
             return;
@@ -260,6 +268,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
       token: null,
       isAuthenticated: false,
       isLoading: false,
+      lastFetched: null,
     });
     clearUsers();
     options?.onLogout?.();
@@ -323,13 +332,32 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
     }
   }, [options]);
 
+  // FIXED: getProfile with proper caching and deduplication
   const getProfile = useCallback(
-    async (id: string) => {
+    async (id: string, forceRefresh = false) => {
+      // If there's already a pending request for this user, return it
+      if (pendingProfileRequests.current.has(id)) {
+        return pendingProfileRequests.current.get(id)!;
+      }
+
+      // Check cache if not forcing refresh
+      if (
+        !forceRefresh &&
+        auth.user?.user_id === id &&
+        auth.lastFetched &&
+        Date.now() - auth.lastFetched < PROFILE_CACHE_DURATION
+      ) {
+        return auth.user;
+      }
+
       try {
-        const u = await userService.getProfile(id);
+        const request = userService.getProfile(id);
+        pendingProfileRequests.current.set(id, request);
+
+        const u = await request;
         setAuth((prev) => {
           if (prev.user?.user_id === id || prev.user === null) {
-            return { ...prev, user: u };
+            return { ...prev, user: u, lastFetched: Date.now() };
           }
           return prev;
         });
@@ -339,9 +367,12 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
         setError(msg);
         options?.onError?.(msg);
         throw err;
+      } finally {
+        // Clean up the pending request
+        pendingProfileRequests.current.delete(id);
       }
     },
-    [options]
+    [auth.user, auth.lastFetched, options]
   );
 
   const updateProfile = useCallback(
@@ -353,7 +384,9 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
           users: prev.users.map((x) => (x.user_id === id ? updated : x)),
         }));
         setAuth((prev) =>
-          prev.user?.user_id === id ? { ...prev, user: updated } : prev
+          prev.user?.user_id === id
+            ? { ...prev, user: updated, lastFetched: Date.now() }
+            : prev
         );
       } catch (err: any) {
         const msg = err?.response?.data?.error ?? "Failed to update profile";
@@ -381,6 +414,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
               token: null,
               isAuthenticated: false,
               isLoading: false,
+              lastFetched: null,
             };
           }
           return prev;

@@ -1,39 +1,34 @@
-import EcommerceMetrics from "../../components/ecommerce/EcommerceMetrics";
-import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
-import StatisticsChart from "../../components/ecommerce/StatisticsChart";
-import MonthlyTarget from "../../components/ecommerce/MonthlyTarget";
-import RecentOrders from "../../components/ecommerce/RecentOrders";
-import DemographicCard from "../../components/ecommerce/DemographicCard";
 import PageMeta from "../../components/common/PageMeta";
+import AwardsMetrics from "../../components/music-awards/AwardsMetrics";
+import MonthlyVotesChart from "../../components/music-awards/MonthlyVotesChart";
+import RecentVotes from "../../components/music-awards/RecentVotes";
+import VoterDemographics from "../../components/music-awards/VoterDemographics";
+import VotingStatistics from "../../components/music-awards/VotingStatistics";
+import VotingTarget from "../../components/music-awards/VotingTarget";
 
 export default function Home() {
   return (
     <>
       <PageMeta
         title="Zimdancehall Music Awards"
-        description="This is the dashboard for Zimdancehall Music Awards"
+        description="Real-time voting dashboard and analytics for Zimdancehall Music Awards"
       />
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         <div className="col-span-12 space-y-6 xl:col-span-7">
-          <EcommerceMetrics />
-
-          <MonthlySalesChart />
+          <AwardsMetrics />
+          <MonthlyVotesChart />
         </div>
-
         <div className="col-span-12 xl:col-span-5">
-          <MonthlyTarget />
+          <VotingTarget />
         </div>
-
         <div className="col-span-12">
-          <StatisticsChart />
+          <VotingStatistics />
         </div>
-
         <div className="col-span-12 xl:col-span-5">
-          <DemographicCard />
+          <VoterDemographics />
         </div>
-
         <div className="col-span-12 xl:col-span-7">
-          <RecentOrders />
+          <RecentVotes />
         </div>
       </div>
     </>

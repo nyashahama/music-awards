@@ -20,6 +20,8 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import { AuthProvider } from "./hooks/useUsers";
 import CategoryPage from "./pages/Tables/CategoryPage";
+import AllNominees from "./components/tables/AllNominees";
+import AddNominee from "./pages/Forms/AddNominee";
 
 export default function App() {
   return (
@@ -31,16 +33,13 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
 
-            {/* Dynamic Category Page */}
-            <Route path="/:categoryId" element={<CategoryPage />} />
-
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
 
             {/* Forms */}
-            <Route path="/add-nominee" element={<FormElements />} />
+            {/* <Route path="/add-nominee" element={<FormElements />} /> */}
 
             {/* Tables */}
             <Route path="/basic-table" element={<BasicTables />} />
@@ -50,6 +49,10 @@ export default function App() {
             <Route path="/song-year" element={<CategoryPage />} />
             <Route path="/collaboration" element={<CategoryPage />} />
             <Route path="/newcomer" element={<CategoryPage />} />
+
+            {/* Nominees Management */}
+            <Route path="/nominees" element={<AllNominees />} />
+            <Route path="/add-nominee" element={<AddNominee />} />
 
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />

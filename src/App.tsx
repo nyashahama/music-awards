@@ -19,6 +19,7 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import { AuthProvider } from "./hooks/useUsers";
+import CategoryPage from "./pages/Tables/CategoryPage";
 
 export default function App() {
   return (
@@ -30,16 +31,25 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route index path="/" element={<Home />} />
 
+            {/* Dynamic Category Page */}
+            <Route path="/:categoryId" element={<CategoryPage />} />
+
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
 
             {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
+            <Route path="/add-nominee" element={<FormElements />} />
 
             {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
+            <Route path="/basic-table" element={<BasicTables />} />
+            {/* Category Pages */}
+            <Route path="/best-male" element={<CategoryPage />} />
+            <Route path="/best-female" element={<CategoryPage />} />
+            <Route path="/song-year" element={<CategoryPage />} />
+            <Route path="/collaboration" element={<CategoryPage />} />
+            <Route path="/newcomer" element={<CategoryPage />} />
 
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />

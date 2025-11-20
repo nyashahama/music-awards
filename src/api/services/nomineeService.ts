@@ -7,6 +7,8 @@ export interface Nominee {
   sample_works: JSON;
   image_url: string;
   created_at: Date;
+  updated_at: Date;
+  categories?: CategoryBrief[];
 }
 
 export interface CreateNomineeRequest {
@@ -14,19 +16,19 @@ export interface CreateNomineeRequest {
   description: string;
   sample_works: JSON;
   image_url: string;
-  category_ids: string;
+  category_ids: string[];
 }
 
 export interface UpdateNomineeRequest {
-  name: string;
-  description: string;
-  sample_works: JSON;
-  image_url: string;
-  category_ids: string;
+  name?: string;
+  description?: string;
+  sample_works?: JSON;
+  image_url?: string;
+  category_ids?: string[];
 }
 
 export interface SetCategoriesRequest {
-  category_ids: string;
+  category_ids: string[];
 }
 
 export interface NomineeResponse {
@@ -37,7 +39,7 @@ export interface NomineeResponse {
   image_url: string;
   created_at: Date;
   updated_at: Date;
-  categories: CategoryBrief;
+  categories?: CategoryBrief[];
 }
 
 export interface CategoryBrief {
@@ -66,18 +68,17 @@ class NomineeService {
 
   async updateNominee(
     id: string,
-    updateNomineerequest: UpdateNomineeRequest
+    updateNomineeRequest: UpdateNomineeRequest
   ): Promise<NomineeResponse> {
     const response = await apiClient.put<NomineeResponse>(
       `${this.baseUrl}/${id}`,
-      updateNomineerequest
+      updateNomineeRequest
     );
     return response.data;
   }
 
   async deleteNominee(id: string): Promise<void> {
-    const response = await apiClient.delete<void>(`${this.baseUrl}/${id}`);
-    return response.data;
+    await apiClient.delete<void>(`${this.baseUrl}/${id}`);
   }
 
   async getNomineeDetails(id: string): Promise<NomineeResponse> {
@@ -89,6 +90,39 @@ class NomineeService {
 
   async getAllNominees(): Promise<NomineeResponse[]> {
     const response = await apiClient.get<NomineeResponse[]>(`${this.baseUrl}`);
+    return response.data;
+  }
+
+  // Nominee-Category relationship methods
+  async addCategory(nomineeId: string, categoryId: string): Promise<void> {
+    await apiClient.post(`${this.baseUrl}/${nomineeId}/categories`, {
+      categoryId,
+    });
+  }
+
+  async removeCategory(nomineeId: string, categoryId: string): Promise<void> {
+    await apiClient.delete(
+      `${this.baseUrl}/${nomineeId}/categories/${categoryId}`
+    );
+  }
+
+  async setCategories(nomineeId: string, categoryIds: string[]): Promise<void> {
+    await apiClient.put(`${this.baseUrl}/${nomineeId}/categories`, {
+      category_ids: categoryIds,
+    });
+  }
+
+  async getCategories(nomineeId: string): Promise<CategoryBrief[]> {
+    const response = await apiClient.get<CategoryBrief[]>(
+      `${this.baseUrl}/${nomineeId}/categories`
+    );
+    return response.data;
+  }
+
+  async getNomineesByCategory(categoryId: string): Promise<NomineeBrief[]> {
+    const response = await apiClient.get<NomineeBrief[]>(
+      `/categories/${categoryId}/nominees`
+    );
     return response.data;
   }
 }

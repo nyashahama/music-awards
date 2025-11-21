@@ -6,11 +6,14 @@ import Label from "../form/Label";
 import { useAuth } from "../../hooks/useUsers";
 import { memo, useEffect, useState } from "react";
 import Alert from "../ui/alert/Alert";
+import { useNavigate } from "react-router";
 
 function UserAddressCard() {
   const { isOpen, openModal, closeModal } = useModal();
   const { auth, updateProfile } = useAuth();
   const { user } = auth;
+
+  const navigate = useNavigate();
 
   const [alert, setAlert] = useState<{
     variant: "success" | "error" | "warning" | "info";
@@ -25,6 +28,12 @@ function UserAddressCard() {
     postal_code: "",
     tax_id: "",
   });
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/signin", { replace: true });
+    }
+  }, [user, navigate]);
 
   // Initialize form data from user profile
   useEffect(() => {

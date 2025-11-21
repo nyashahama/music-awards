@@ -21,6 +21,8 @@ import { AuthProvider } from "./hooks/useUsers";
 import CategoryPage from "./pages/Tables/CategoryPage";
 import AllNominees from "./components/tables/AllNominees";
 import AddNominee from "./pages/Forms/AddNominee";
+import RegisteredVoters from "./components/tables/RegisteredVoters";
+import VotingActivity from "./components/tables/VotingActivity";
 
 export default function App() {
   return (
@@ -39,6 +41,8 @@ export default function App() {
 
             {/* Forms */}
             {/* <Route path="/add-nominee" element={<FormElements />} /> */}
+            <Route path="/voters" element={<RegisteredVoters />} />
+            <Route path="/voter-activity" element={<VotingActivity />} />
 
             {/* Tables */}
             <Route path="/basic-table" element={<BasicTables />} />

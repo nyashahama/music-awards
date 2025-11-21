@@ -1,0 +1,365 @@
+import { useState } from "react";
+import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import ComponentCard from "../../components/common/ComponentCard";
+import PageMeta from "../../components/common/PageMeta";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
+import Badge from "../../components/ui/badge/Badge";
+
+interface RegisteredVoter {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  location: string;
+  availableVotes: number;
+  createdAt: string;
+}
+
+// Mock data - replace with actual API call
+const registeredVotersData: RegisteredVoter[] = [
+  {
+    userId: "1",
+    firstName: "Tendai",
+    lastName: "Moyo",
+    email: "tendai.moyo@example.com",
+    role: "voter",
+    location: "Harare",
+    availableVotes: 5,
+    createdAt: "2024-01-15T10:30:00Z",
+  },
+  {
+    userId: "2",
+    firstName: "Rudo",
+    lastName: "Chikwanha",
+    email: "rudo.chikwanha@example.com",
+    role: "voter",
+    location: "Bulawayo",
+    availableVotes: 3,
+    createdAt: "2024-01-16T14:20:00Z",
+  },
+  {
+    userId: "3",
+    firstName: "Takudzwa",
+    lastName: "Nyathi",
+    email: "takudzwa.nyathi@example.com",
+    role: "voter",
+    location: "Mutare",
+    availableVotes: 5,
+    createdAt: "2024-01-14T09:15:00Z",
+  },
+  {
+    userId: "4",
+    firstName: "Chipo",
+    lastName: "Sibanda",
+    email: "chipo.sibanda@example.com",
+    role: "admin",
+    location: "Gweru",
+    availableVotes: 5,
+    createdAt: "2024-01-10T08:45:00Z",
+  },
+  {
+    userId: "5",
+    firstName: "Panashe",
+    lastName: "Gumbo",
+    email: "panashe.gumbo@example.com",
+    role: "voter",
+    location: "Harare",
+    availableVotes: 0,
+    createdAt: "2024-01-20T16:30:00Z",
+  },
+  {
+    userId: "6",
+    firstName: "Kudzai",
+    lastName: "Madziva",
+    email: "kudzai.madziva@example.com",
+    role: "voter",
+    location: "Masvingo",
+    availableVotes: 4,
+    createdAt: "2024-01-18T11:00:00Z",
+  },
+];
+
+export default function RegisteredVoters() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
+
+  const locations = [
+    ...new Set(registeredVotersData.map((voter) => voter.location)),
+  ];
+
+  const filteredVoters = registeredVotersData.filter((voter) => {
+    const matchesSearch =
+      voter.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      voter.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      voter.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesLocation =
+      locationFilter === "all" || voter.location === locationFilter;
+    const matchesRole = roleFilter === "all" || voter.role === roleFilter;
+
+    return matchesSearch && matchesLocation && matchesRole;
+  });
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const getRoleColor = (role: string) => {
+    return role === "admin" ? "warning" : "default";
+  };
+
+  const getVotesColor = (votes: number) => {
+    if (votes === 0) return "error";
+    if (votes <= 2) return "warning";
+    return "success";
+  };
+
+  return (
+    <>
+      <PageMeta
+        title="Registered Voters | Zimdancehall Music Awards"
+        description="Manage registered voters and their voting status"
+      />
+      <PageBreadcrumb pageTitle="Registered Voters" />
+
+      <div className="space-y-6">
+        <ComponentCard title="Voters Management">
+          {/* Summary Stats */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white">
+              <div className="text-2xl font-bold">
+                {registeredVotersData.length}
+              </div>
+              <div className="text-sm opacity-90">Total Voters</div>
+            </div>
+            <div className="p-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg text-white">
+              <div className="text-2xl font-bold">
+                {
+                  registeredVotersData.filter((v) => v.availableVotes > 0)
+                    .length
+                }
+              </div>
+              <div className="text-sm opacity-90">Active Voters</div>
+            </div>
+            <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
+              <div className="text-2xl font-bold">
+                {registeredVotersData.filter((v) => v.role === "admin").length}
+              </div>
+              <div className="text-sm opacity-90">Admin Users</div>
+            </div>
+            <div className="p-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-white">
+              <div className="text-2xl font-bold">
+                {registeredVotersData.reduce(
+                  (sum, v) => sum + v.availableVotes,
+                  0
+                )}
+              </div>
+              <div className="text-sm opacity-90">Total Available Votes</div>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg dark:bg-gray-800">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Search
+                </label>
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Location
+                </label>
+                <select
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="all">All Locations</option>
+                  {locations.map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Role
+                </label>
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="all">All Roles</option>
+                  <option value="voter">Voter</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button className="w-full px-4 py-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 transition-colors">
+                  Export Data
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+            <div className="max-w-full overflow-x-auto">
+              <Table>
+                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                  <TableRow>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Voter
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Email
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Location
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Role
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Available Votes
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                    >
+                      Registered
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400"
+                    >
+                      Actions
+                    </TableCell>
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                  {filteredVoters.map((voter) => (
+                    <TableRow
+                      key={voter.userId}
+                      className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
+                    >
+                      <TableCell className="px-5 py-4 text-start">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
+                            {voter.firstName.charAt(0)}
+                            {voter.lastName.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="block font-semibold text-gray-800 text-theme-sm dark:text-white/90">
+                              {voter.firstName} {voter.lastName}
+                            </span>
+                            <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
+                              ID: {voter.userId}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                        {voter.email}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                        {voter.location}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-start">
+                        <Badge size="sm" color={getRoleColor(voter.role)}>
+                          {voter.role.charAt(0).toUpperCase() +
+                            voter.role.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-start">
+                        <Badge
+                          size="sm"
+                          color={getVotesColor(voter.availableVotes)}
+                        >
+                          {voter.availableVotes} votes
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                        {formatDate(voter.createdAt)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-center">
+                        <div className="flex justify-center space-x-2">
+                          <button className="px-3 py-1 text-xs font-medium text-blue-600 transition-colors bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200">
+                            View
+                          </button>
+                          <button className="px-3 py-1 text-xs font-medium text-green-600 transition-colors bg-green-100 rounded-lg hover:bg-green-200 dark:bg-green-900 dark:text-green-200">
+                            Edit
+                          </button>
+                          {voter.role === "voter" && (
+                            <button className="px-3 py-1 text-xs font-medium text-purple-600 transition-colors bg-purple-100 rounded-lg hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-200">
+                              Promote
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Table Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-white/[0.05]">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Showing {filteredVoters.length} of{" "}
+                  {registeredVotersData.length} voters
+                </span>
+                <div className="flex gap-2">
+                  <button className="px-3 py-1 text-gray-700 transition-colors border border-gray-200 rounded-lg dark:text-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/[0.05]">
+                    Previous
+                  </button>
+                  <button className="px-3 py-1 text-white transition-colors bg-purple-500 rounded-lg hover:bg-purple-600">
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ComponentCard>
+      </div>
+    </>
+  );
+}

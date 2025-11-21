@@ -23,6 +23,8 @@ import AllNominees from "./components/tables/AllNominees";
 import AddNominee from "./pages/Forms/AddNominee";
 import RegisteredVoters from "./components/tables/RegisteredVoters";
 import VotingActivity from "./components/tables/VotingActivity";
+import LiveResults from "./components/tables/LiveResults";
+import VotingAnalyticsReports from "./components/tables/VotingAnalyticsReports";
 
 export default function App() {
   return (
@@ -44,6 +46,8 @@ export default function App() {
             <Route path="/voters" element={<RegisteredVoters />} />
             <Route path="/voter-activity" element={<VotingActivity />} />
 
+            <Route path="/live-results" element={<LiveResults />} />
+
             {/* Tables */}
             <Route path="/basic-table" element={<BasicTables />} />
             {/* Category Pages */}
@@ -56,6 +60,8 @@ export default function App() {
             {/* Nominees Management */}
             <Route path="/nominees" element={<AllNominees />} />
             <Route path="/add-nominee" element={<AddNominee />} />
+
+            <Route path="/analytics" element={<VotingAnalyticsReports />} />
 
             {/* Ui Elements */}
             <Route path="/alerts" element={<Alerts />} />

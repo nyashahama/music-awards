@@ -25,6 +25,8 @@ import RegisteredVoters from "./components/tables/RegisteredVoters";
 import VotingActivity from "./components/tables/VotingActivity";
 import LiveResults from "./components/tables/LiveResults";
 import VotingAnalyticsReports from "./components/tables/VotingAnalyticsReports";
+import ForgotPassword from "./pages/AuthPages/ForgotPassword";
+import ResetPassword from "./pages/AuthPages/ResetPassword";
 
 export default function App() {
   return (
@@ -79,6 +81,8 @@ export default function App() {
           {/* Auth Layout - Now wrapped in AuthProvider */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />

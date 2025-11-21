@@ -34,11 +34,18 @@ const navItems: NavItem[] = [
     icon: <UserCircleIcon />,
     name: "Categories",
     subItems: [
+      {
+        name: "Manage Categories",
+        path: "/categories/manage",
+        pro: false,
+        new: true,
+      },
+      { name: "Add Category", path: "/categories/add", pro: false },
       { name: "Best Male Artist", path: "/best-male", pro: false },
       { name: "Best Female Artist", path: "/best-female", pro: false },
       { name: "Song of the Year", path: "/song-year", pro: false },
       { name: "Best Collaboration", path: "/collaboration", pro: false },
-      { name: "Best Newcomer", path: "/newcomer", pro: false, new: true },
+      { name: "Best Newcomer", path: "/newcomer", pro: false },
     ],
   },
   {

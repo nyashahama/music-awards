@@ -27,6 +27,9 @@ import LiveResults from "./components/tables/LiveResults";
 import VotingAnalyticsReports from "./components/tables/VotingAnalyticsReports";
 import ForgotPassword from "./pages/AuthPages/ForgotPassword";
 import ResetPassword from "./pages/AuthPages/ResetPassword";
+import CategoriesManagement from "./components/tables/CategoriesManagement";
+import EditCategory from "./components/tables/EditCategory";
+import AddCategory from "./components/tables/AddCategory";
 
 export default function App() {
   return (
@@ -53,6 +56,15 @@ export default function App() {
             {/* Tables */}
             <Route path="/basic-table" element={<BasicTables />} />
             {/* Category Pages */}
+            <Route
+              path="/categories/manage"
+              element={<CategoriesManagement />}
+            />
+            <Route path="/categories/add" element={<AddCategory />} />
+            <Route
+              path="/categories/edit/:categoryId"
+              element={<EditCategory />}
+            />
             <Route path="/best-male" element={<CategoryPage />} />
             <Route path="/best-female" element={<CategoryPage />} />
             <Route path="/song-year" element={<CategoryPage />} />

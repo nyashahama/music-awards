@@ -29,7 +29,7 @@ import ForgotPassword from "./pages/AuthPages/ForgotPassword";
 import ResetPassword from "./pages/AuthPages/ResetPassword";
 import CategoriesManagement from "./components/tables/CategoriesManagement";
 import EditCategory from "./components/tables/EditCategory";
-import AddCategory from "./components/tables/AddCategory";
+import AddCategory from "./pages/Forms/AddCategory";
 
 export default function App() {
   return (

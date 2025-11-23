@@ -66,13 +66,14 @@ export interface ApiResponse<T> {
 
 class UserService {
   private readonly usersPath = "/profile";
+  private readonly auth = "/auth";
 
   // Auth endpoints
   async register(
     registerRequest: RegisterRequest
   ): Promise<{ user: User; token: string }> {
     const response = await apiClient.post<{ user: User; token: string }>(
-      `/register`,
+      `${this.auth}/register`,
       registerRequest
     );
     return response.data;
@@ -80,7 +81,7 @@ class UserService {
 
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
     const response = await apiClient.post<LoginResponse>(
-      `/login`,
+      `${this.auth}/login`,
       loginRequest
     );
     return response.data;
@@ -90,7 +91,7 @@ class UserService {
     forgotPasswordRequest: ForgotPasswordRequest
   ): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>(
-      `/forgot-password`,
+      `${this.auth}/forgot-password`,
       forgotPasswordRequest
     );
     return response.data;
@@ -100,7 +101,7 @@ class UserService {
     resetPasswordRequest: ResetPasswordRequest
   ): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>(
-      `/reset-password`,
+      `${this.auth}/reset-password`,
       resetPasswordRequest
     );
     return response.data;
@@ -108,7 +109,7 @@ class UserService {
 
   async validateResetToken(token: string): Promise<ValidateResetTokenResponse> {
     const response = await apiClient.post<ValidateResetTokenResponse>(
-      `/validate-reset-token`,
+      `${this.auth}/validate-reset-token`,
       { token }
     );
     return response.data;

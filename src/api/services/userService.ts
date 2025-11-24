@@ -9,7 +9,6 @@ export interface User {
   location: string;
   free_votes: number;
   paid_votes: number;
-  total_votes: number;
   created_at: string;
 }
 

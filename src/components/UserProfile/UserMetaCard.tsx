@@ -85,6 +85,16 @@ function UserMetaCard() {
     });
   };
 
+  const getTotalVotes = (): number => {
+    if (!user) return 0;
+    return (user.free_votes || 0) + (user.paid_votes || 0);
+  };
+
+  // Format votes for display (optional)
+  const formatVotes = (votes: number): string => {
+    return votes.toLocaleString();
+  };
+
   return (
     <>
       {alert && (
@@ -335,16 +345,16 @@ function UserMetaCard() {
                     </p>
                   </div>
 
-                  <div className="col-span-2">
-                    <Label>Available Votes</Label>
-                    <Input
-                      type="text"
-                      value={user?.available_votes.toString()}
-                      disabled
-                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Available votes are managed by the system
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Total Available Votes:
+                      <span className="font-semibold ml-2">
+                        {formatVotes(getTotalVotes())}
+                      </span>
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Free: {user?.free_votes || 0} • Paid:{" "}
+                      {user?.paid_votes || 0}
                     </p>
                   </div>
 

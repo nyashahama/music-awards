@@ -4,8 +4,9 @@ export interface Category {
   category_id: string;
   name: string;
   description: string;
-  created_at: Date;
-  updated_at: Date;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateCategoryRequest {
@@ -14,16 +15,17 @@ export interface CreateCategoryRequest {
 }
 
 export interface UpdateCategoryRequest {
-  name: string;
-  description: string;
+  name?: string;
+  description?: string;
 }
 
 export interface CategoryResponse {
   category_id: string;
   name: string;
   description: string;
-  created_at: Date;
-  updated_at: Date;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 class CategoryService {
@@ -51,8 +53,7 @@ class CategoryService {
   }
 
   async deleteCategory(id: string): Promise<void> {
-    const response = await apiClient.delete<void>(`${this.baseUrl}/${id}`);
-    return response.data;
+    await apiClient.delete<void>(`${this.baseUrl}/${id}`);
   }
 
   async getCategory(id: string): Promise<CategoryResponse> {
@@ -74,4 +75,5 @@ class CategoryService {
     return response.data;
   }
 }
+
 export const categoryService = new CategoryService();

@@ -4,17 +4,18 @@ export interface Nominee {
   nominee_id: string;
   name: string;
   description: string;
-  sample_works: JSON;
+  sample_works: any; // Changed from JSON to any for flexibility
   image_url: string;
-  created_at: Date;
-  updated_at: Date;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
   categories?: CategoryBrief[];
 }
 
 export interface CreateNomineeRequest {
   name: string;
   description: string;
-  sample_works: JSON;
+  sample_works?: any; // Optional in backend
   image_url: string;
   category_ids: string[];
 }
@@ -22,7 +23,7 @@ export interface CreateNomineeRequest {
 export interface UpdateNomineeRequest {
   name?: string;
   description?: string;
-  sample_works?: JSON;
+  sample_works?: any;
   image_url?: string;
   category_ids?: string[];
 }
@@ -35,10 +36,11 @@ export interface NomineeResponse {
   nominee_id: string;
   name: string;
   description: string;
-  sample_works: JSON;
+  sample_works: any;
   image_url: string;
-  created_at: Date;
-  updated_at: Date;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
   categories?: CategoryBrief[];
 }
 
@@ -96,7 +98,7 @@ class NomineeService {
   // Nominee-Category relationship methods
   async addCategory(nomineeId: string, categoryId: string): Promise<void> {
     await apiClient.post(`${this.baseUrl}/${nomineeId}/categories`, {
-      categoryId,
+      categoryId, // Backend expects categoryId in camelCase
     });
   }
 
@@ -108,7 +110,7 @@ class NomineeService {
 
   async setCategories(nomineeId: string, categoryIds: string[]): Promise<void> {
     await apiClient.put(`${this.baseUrl}/${nomineeId}/categories`, {
-      category_ids: categoryIds,
+      category_ids: categoryIds, // Backend expects category_ids in snake_case
     });
   }
 

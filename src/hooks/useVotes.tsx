@@ -5,11 +5,14 @@ import {
   ChangeVoteRequest,
   VoteResponse,
   UserVoteResponse,
+  AvailableVotesResponse,
+  VoteStatsResponse,
+  UserVoteSummary,
 } from "../api/services/voteService";
 
 interface VotesState {
   votes: UserVoteResponse[];
-  availableVotes: number;
+  availableVotes: AvailableVotesResponse | null;
   isLoading: boolean;
 }
 
@@ -17,13 +20,15 @@ export interface UseVotesReturn {
   votes: VotesState;
   castVote: (data: CastVoteRequest) => Promise<UserVoteResponse>;
   getUserVotes: () => Promise<void>;
+  getMyVoteSummary: () => Promise<UserVoteSummary[]>;
   getAvailableVotes: () => Promise<void>;
   changeVote: (
     voteId: string,
     data: ChangeVoteRequest
-  ) => Promise<VoteResponse>;
+  ) => Promise<UserVoteResponse>;
   deleteVote: (voteId: string) => Promise<void>;
-  getCategoryVotes: (categoryId: string) => Promise<VoteResponse[]>;
+  getCategoryStats: (categoryId: string) => Promise<VoteStatsResponse[]>;
+  getNomineeStats: (nomineeId: string) => Promise<VoteStatsResponse[]>;
   getAllVotes: () => Promise<VoteResponse[]>;
   clearError: () => void;
   clearVotes: () => void;
@@ -33,7 +38,7 @@ export interface UseVotesReturn {
 export const useVotes = (): UseVotesReturn => {
   const [votes, setVotes] = useState<VotesState>({
     votes: [],
-    availableVotes: 0,
+    availableVotes: null,
     isLoading: false,
   });
 
@@ -44,7 +49,7 @@ export const useVotes = (): UseVotesReturn => {
   const clearVotes = useCallback(() => {
     setVotes({
       votes: [],
-      availableVotes: 0,
+      availableVotes: null,
       isLoading: false,
     });
   }, []);
@@ -57,9 +62,10 @@ export const useVotes = (): UseVotesReturn => {
         setVotes((prev) => ({
           ...prev,
           votes: [...prev.votes, response],
-          availableVotes: Math.max(0, prev.availableVotes - 1),
           isLoading: false,
         }));
+        // Refresh available votes after casting
+        await getAvailableVotes();
         return response;
       } catch (err: any) {
         const msg = err?.response?.data?.error ?? "Failed to cast vote";
@@ -88,6 +94,16 @@ export const useVotes = (): UseVotesReturn => {
     }
   }, []);
 
+  const getMyVoteSummary = useCallback(async (): Promise<UserVoteSummary[]> => {
+    try {
+      return await voteService.getMyVoteSummary();
+    } catch (err: any) {
+      const msg = err?.response?.data?.error ?? "Failed to fetch vote summary";
+      setError(msg);
+      throw err;
+    }
+  }, []);
+
   const getAvailableVotes = useCallback(async () => {
     setVotes((prev) => ({ ...prev, isLoading: true }));
     try {
@@ -107,13 +123,16 @@ export const useVotes = (): UseVotesReturn => {
   }, []);
 
   const changeVote = useCallback(
-    async (voteId: string, data: ChangeVoteRequest): Promise<VoteResponse> => {
+    async (
+      voteId: string,
+      data: ChangeVoteRequest
+    ): Promise<UserVoteResponse> => {
       setVotes((prev) => ({ ...prev, isLoading: true }));
       try {
         const updated = await voteService.changeVote(voteId, data);
-        setVotes((prev) => ({ ...prev, isLoading: false }));
         // Refresh user votes after changing
         await getUserVotes();
+        setVotes((prev) => ({ ...prev, isLoading: false }));
         return updated;
       } catch (err: any) {
         const msg = err?.response?.data?.error ?? "Failed to change vote";
@@ -132,9 +151,10 @@ export const useVotes = (): UseVotesReturn => {
       setVotes((prev) => ({
         ...prev,
         votes: prev.votes.filter((v) => v.vote_id !== voteId),
-        availableVotes: prev.availableVotes + 1,
         isLoading: false,
       }));
+      // Refresh available votes after deleting
+      await getAvailableVotes();
     } catch (err: any) {
       const msg = err?.response?.data?.error ?? "Failed to delete vote";
       setError(msg);
@@ -143,13 +163,27 @@ export const useVotes = (): UseVotesReturn => {
     }
   }, []);
 
-  const getCategoryVotes = useCallback(
-    async (categoryId: string): Promise<VoteResponse[]> => {
+  const getCategoryStats = useCallback(
+    async (categoryId: string): Promise<VoteStatsResponse[]> => {
       try {
-        return await voteService.getCategoryVotes(categoryId);
+        return await voteService.getCategoryStats(categoryId);
       } catch (err: any) {
         const msg =
-          err?.response?.data?.error ?? "Failed to fetch category votes";
+          err?.response?.data?.error ?? "Failed to fetch category stats";
+        setError(msg);
+        throw err;
+      }
+    },
+    []
+  );
+
+  const getNomineeStats = useCallback(
+    async (nomineeId: string): Promise<VoteStatsResponse[]> => {
+      try {
+        return await voteService.getNomineeStats(nomineeId);
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.error ?? "Failed to fetch nominee stats";
         setError(msg);
         throw err;
       }
@@ -171,10 +205,12 @@ export const useVotes = (): UseVotesReturn => {
     votes,
     castVote,
     getUserVotes,
+    getMyVoteSummary,
     getAvailableVotes,
     changeVote,
     deleteVote,
-    getCategoryVotes,
+    getCategoryStats,
+    getNomineeStats,
     getAllVotes,
     clearError,
     clearVotes,

@@ -7,7 +7,9 @@ export interface User {
   email: string;
   role: string;
   location: string;
-  available_votes: number;
+  free_votes: number;
+  paid_votes: number;
+  total_votes: number;
   created_at: string;
 }
 

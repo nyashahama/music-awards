@@ -66,7 +66,8 @@ export interface ApiResponse<T> {
 }
 
 class UserService {
-  private readonly usersPath = "/profile";
+  private readonly profilePath = "/profile";
+  private readonly usersPath = "/users";
   private readonly auth = "/auth";
 
   // Auth endpoints
@@ -123,7 +124,7 @@ class UserService {
   }
 
   async getProfile(id: string): Promise<User> {
-    const response = await apiClient.get<User>(`${this.usersPath}/${id}`);
+    const response = await apiClient.get<User>(`${this.profilePath}/${id}`);
     return response.data;
   }
 
@@ -132,14 +133,14 @@ class UserService {
     updateData: UpdateProfileRequest
   ): Promise<User> {
     const response = await apiClient.put<User>(
-      `${this.usersPath}/${id}`,
+      `${this.profilePath}/${id}`,
       updateData
     );
     return response.data;
   }
 
   async deleteAccount(id: string): Promise<void> {
-    await apiClient.delete(`${this.usersPath}/${id}`);
+    await apiClient.delete(`${this.profilePath}/${id}`);
   }
 
   async promoteUser(id: string): Promise<{ message: string }> {

@@ -1,186 +1,88 @@
-# 🎶 Zimdancehall Music Awards — Voting Dashboard (React + Tailwind)
+# 🎶 Music Awards — Voting Dashboard
 
-This project is a **modern, elegant, and fully responsive admin dashboard** built in **React + Tailwind CSS**, customized specifically for managing the **Zimdancehall Music Awards voting system**.
+<div align="center">
 
-It is based on the open-source TailAdmin template, but heavily modified and extended to fit the needs of an online music awards platform, including:
+**A modern, elegant admin dashboard for managing music awards voting systems**
 
-* Secure vote management
-* Artist & category administration
-* Fraud detection tools
-* Analytics dashboards
-* Moderation features
-* User activity tracking
+[Live Demo](https://music-awards-dashboard.onrender.com) • [Report Bug](https://github.com/nyashahama/music-awards/issues) • [Request Feature](https://github.com/nyashahama/music-awards/issues)
+
+</div>
 
 ---
 
-## 🌍 Project Purpose
+## 🌐 Access the Platform
 
-The **Zimdancehall Music Awards Voting Dashboard** provides a backend interface used by:
+**Admin Dashboard:** [https://music-awards-dashboard.onrender.com](https://music-awards-dashboard.onrender.com)
 
-* **Admins** — manage artists, categories, nominees, and voting windows
-* **Moderators** — track suspicious votes, manage users
-* **Super Admins** — access full analytics, export result data
-* **System Owners** — configure event-wide settings
-
-The platform ensures **fair, transparent, and tamper-proof** public voting.
+> **Note:** This is currently the admin interface. A public-facing voting website for end users is coming soon!
 
 ---
 
-## ⚡ Features (Custom to This Project)
+## 📖 Overview
+
+The **Music Awards Voting Dashboard** is a comprehensive platform built with **React + Tailwind CSS** for managing online music awards. It provides admins with powerful tools to run fair, transparent, and secure voting campaigns.
+
+### Current Status
+✅ **Admin Dashboard** — Fully functional management interface  
+🚧 **Public Voting Site** — Coming soon! Users will be redirected to a beautiful voting interface
+
+---
+
+## ⚡ Key Features
 
 ### 🎤 Artist & Category Management
-
-* Create/edit/remove artists
-* Manage award categories
-* Upload artist images
-* Assign nominees to categories
+- Create, edit, and remove artists
+- Manage award categories and nominees
+- Upload and organize artist images
+- Assign multiple nominees per category
 
 ### 🗳️ Voting System Controls
-
-* Start/stop voting periods
-* Limit votes per user/device
-* IP-based spam prevention
-* JWT authentication for dashboard users
+- Start/stop voting periods with scheduled windows
+- Rate limiting (per user/device/IP)
+- IP-based spam prevention
+- Real-time vote tracking
 
 ### 📊 Advanced Analytics
+- Live vote counts and trending data
+- Category-specific analytics
+- Suspicious activity detection and alerts
+- Export results to CSV/PDF
 
-* Real-time vote counts
-* Per-category analytics
-* Suspicious activity alerts
-* Export results to CSV / PDF
+### 👥 User & Role Management
+- Multi-level access control (Admin, Moderator, Viewer, Super Admin)
+- JWT-based authentication
+- Permission-based route protection
+- User activity logging
 
-### 👤 User & Role Management
-
-* Admin / Moderator / Viewer roles
-* Permission-based route protection
-* Profile management
-
-### 🎨 Modern UI
-
-* Glassmorphism & modern animations
-* Light/Dark mode
-* Fully responsive mobile-friendly layout
-* Beautiful charts and tables
+### 🎨 Modern UI/UX
+- Glassmorphism and smooth animations
+- Light/Dark mode toggle
+- Fully responsive (mobile, tablet, desktop)
+- Interactive charts and data tables
 
 ---
 
 ## 🚀 Tech Stack
 
-This dashboard is built using:
-
-* **React 19**
-* **TypeScript**
-* **Tailwind CSS**
-* **ApexCharts** for graphs
-* **React Router**
-* **Vite**
-* **JWT Auth (Backend Required)**
-* **REST API (Java/Spring Boot or Node.js)**
+| Category | Technologies |
+|----------|-------------|
+| **Frontend** | React 19, TypeScript, Tailwind CSS |
+| **Build Tool** | Vite |
+| **Routing** | React Router v6 |
+| **Charts** | ApexCharts |
+| **Authentication** | JWT (backend required) |
+| **API** | REST (Go or Java/Spring Boot or Node.js) |
 
 ---
 
-## 📦 Installation & Setup
+## 📦 Installation
 
-### 1️⃣ Prerequisites
+### Prerequisites
+- Node.js 18+ (Node 20 recommended)
+- npm or yarn
+- Backend API with JWT authentication
 
-Make sure you have:
+### Quick Start
 
-* **Node 18+** (Node 20 recommended)
-* A backend API (your own voting system backend)
-
----
-
-### 2️⃣ Clone the Repository
-
+1. **Clone the repository**
 ```bash
-git clone https://github.com/nyashahama/music-awards.git
-cd music-awards
-```
-
----
-
-### 3️⃣ Install Dependencies
-
-```bash
-npm install
-# or
-yarn install
-```
-
-If you encounter peer dependency issues:
-
-```bash
-npm install --legacy-peer-deps
-```
-
----
-
-### 4️⃣ Start Development Server
-
-```bash
-npm run dev
-# or
-yarn dev
-```
-
-Your project will run on:
-
-```
-http://localhost:5173
-```
-
----
-
-## 🧱 Project Structure
-
-```
-src/
- ├── components/    # Shared UI components (buttons, cards, modals)
- ├── pages/         # Dashboard pages
- ├── hooks/         # Custom React hooks
- ├── layouts/       # App layout (sidebar, header)
- ├── services/      # API calls (axios)
- ├── context/       # Auth & app context
- └── assets/        # Images & icons
-```
-
----
-
-## 🔐 Environment Variables
-
-Create a `.env` file:
-
-```
-VITE_API_URL=https://your-backend-url/api
-```
-
----
-
-## 📅 Roadmap
-
-* Add SMS/email verification for voters
-* Add exportable final results PDFs
-* Add detailed fraud detection dashboard
-* Add mobile app version
-
----
-
-## 🧑‍💼 Credits
-
-This project uses components and the base layout from **TailAdmin (MIT License)**:
-
-* [https://tailadmin.com](https://tailadmin.com)
-* [https://github.com/TailAdmin/free-react-tailwind-admin-dashboard](https://github.com/TailAdmin/free-react-tailwind-admin-dashboard)
-
-All UI/UX enhancements and voting system logic have been customized for the **Zimdancehall Music Awards**.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**, including original TailAdmin components where applicable.
-
----
-
-
-Just tell me!

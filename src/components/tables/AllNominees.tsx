@@ -10,6 +10,11 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import Badge from "../../components/ui/badge/Badge";
+import { Modal } from "../../components/ui/modal";
+import { useModal } from "../../hooks/useModal";
+import Button from "../../components/ui/button/Button";
+import Input from "../../components/form/input/InputField";
+import Label from "../../components/form/Label";
 
 interface Nominee {
   id: number;
@@ -97,6 +102,14 @@ export default function AllNominees() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedNominee, setSelectedNominee] = useState<Nominee | null>(null);
+  const [editFormData, setEditFormData] = useState<Nominee | null>(null);
+
+  const {
+    isOpen: isEditOpen,
+    openModal: openEditModal,
+    closeModal: closeEditModal,
+  } = useModal();
 
   const categories = [
     ...new Set(allNomineesData.map((nominee) => nominee.category)),
@@ -134,6 +147,27 @@ export default function AllNominees() {
       default:
         return "default";
     }
+  };
+
+  const handleEditClick = (nominee: Nominee) => {
+    setEditFormData({ ...nominee });
+    openEditModal();
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+
+  const handleSaveEdit = () => {
+    // TODO: Implement actual save logic with API call
+    console.log("Saving nominee changes:", editFormData);
+    closeEditModal();
   };
 
   return (
@@ -299,7 +333,10 @@ export default function AllNominees() {
                       </TableCell>
                       <TableCell className="px-4 py-3 text-center">
                         <div className="flex justify-center space-x-2">
-                          <button className="px-3 py-1 text-xs font-medium text-blue-600 transition-colors bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200">
+                          <button
+                            onClick={() => handleEditClick(nominee)}
+                            className="px-3 py-1 text-xs font-medium text-blue-600 transition-colors bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200"
+                          >
                             Edit
                           </button>
                           <button className="px-3 py-1 text-xs font-medium text-red-600 transition-colors bg-red-100 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-200">
@@ -333,6 +370,193 @@ export default function AllNominees() {
           </div>
         </ComponentCard>
       </div>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={isEditOpen}
+        onClose={closeEditModal}
+        className="max-w-[700px] m-4"
+      >
+        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="px-2 pr-14">
+            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Edit Nominee Information
+            </h4>
+            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+              Update nominee details and status.
+            </p>
+          </div>
+
+          {editFormData && (
+            <form
+              className="flex flex-col"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveEdit();
+              }}
+            >
+              <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                  {/* Artist Image Preview */}
+                  <div className="col-span-2 flex items-center gap-4 mb-4">
+                    <div className="w-20 h-20 overflow-hidden rounded-full">
+                      <img
+                        width={80}
+                        height={80}
+                        src={editFormData.artist.image}
+                        alt={editFormData.artist.stageName}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800 dark:text-white/90">
+                        {editFormData.artist.stageName}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {editFormData.artist.name}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Stage Name</Label>
+                    <Input
+                      name="stageName"
+                      type="text"
+                      value={editFormData.artist.stageName}
+                      onChange={(e) =>
+                        setEditFormData((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                artist: {
+                                  ...prev.artist,
+                                  stageName: e.target.value,
+                                },
+                              }
+                            : null
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Real Name</Label>
+                    <Input
+                      name="artistName"
+                      type="text"
+                      value={editFormData.artist.name}
+                      onChange={(e) =>
+                        setEditFormData((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                artist: {
+                                  ...prev.artist,
+                                  name: e.target.value,
+                                },
+                              }
+                            : null
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Category</Label>
+                    <select
+                      name="category"
+                      value={editFormData.category}
+                      onChange={handleSelectChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Song</Label>
+                    <Input
+                      name="song"
+                      type="text"
+                      value={editFormData.song}
+                      onChange={handleEditInputChange}
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Status</Label>
+                    <select
+                      name="status"
+                      value={editFormData.status}
+                      onChange={handleSelectChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="active">Active</option>
+                      <option value="pending">Pending</option>
+                      <option value="disqualified">Disqualified</option>
+                    </select>
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Votes</Label>
+                    <Input
+                      name="votes"
+                      type="number"
+                      value={editFormData.votes}
+                      onChange={(e) =>
+                        setEditFormData((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                votes: parseInt(e.target.value) || 0,
+                              }
+                            : null
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Nominee ID</Label>
+                    <Input
+                      type="text"
+                      value={editFormData.id}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Date Added</Label>
+                    <Input
+                      type="text"
+                      value={new Date(
+                        editFormData.dateAdded
+                      ).toLocaleDateString()}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+                <Button size="sm" variant="outline" onClick={closeEditModal}>
+                  Cancel
+                </Button>
+                <Button size="sm" type="submit">
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+      </Modal>
     </>
   );
 }

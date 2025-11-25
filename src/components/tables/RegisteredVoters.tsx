@@ -10,6 +10,11 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import Badge from "../../components/ui/badge/Badge";
+import { Modal } from "../../components/ui/modal";
+import { useModal } from "../../hooks/useModal";
+import Button from "../../components/ui/button/Button";
+import Input from "../../components/form/input/InputField";
+import Label from "../../components/form/Label";
 
 interface RegisteredVoter {
   userId: string;
@@ -90,6 +95,23 @@ export default function RegisteredVoters() {
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [selectedVoter, setSelectedVoter] = useState<RegisteredVoter | null>(
+    null
+  );
+  const [editFormData, setEditFormData] = useState<RegisteredVoter | null>(
+    null
+  );
+
+  const {
+    isOpen: isViewOpen,
+    openModal: openViewModal,
+    closeModal: closeViewModal,
+  } = useModal();
+  const {
+    isOpen: isEditOpen,
+    openModal: openEditModal,
+    closeModal: closeEditModal,
+  } = useModal();
 
   const locations = [
     ...new Set(registeredVotersData.map((voter) => voter.location)),
@@ -123,6 +145,27 @@ export default function RegisteredVoters() {
     if (votes === 0) return "error";
     if (votes <= 2) return "warning";
     return "success";
+  };
+
+  const handleViewClick = (voter: RegisteredVoter) => {
+    setSelectedVoter(voter);
+    openViewModal();
+  };
+
+  const handleEditClick = (voter: RegisteredVoter) => {
+    setEditFormData({ ...voter });
+    openEditModal();
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+
+  const handleSaveEdit = () => {
+    // TODO: Implement actual save logic with API call
+    console.log("Saving changes:", editFormData);
+    closeEditModal();
   };
 
   return (
@@ -321,10 +364,16 @@ export default function RegisteredVoters() {
                       </TableCell>
                       <TableCell className="px-4 py-3 text-center">
                         <div className="flex justify-center space-x-2">
-                          <button className="px-3 py-1 text-xs font-medium text-blue-600 transition-colors bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200">
+                          <button
+                            onClick={() => handleViewClick(voter)}
+                            className="px-3 py-1 text-xs font-medium text-blue-600 transition-colors bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200"
+                          >
                             View
                           </button>
-                          <button className="px-3 py-1 text-xs font-medium text-green-600 transition-colors bg-green-100 rounded-lg hover:bg-green-200 dark:bg-green-900 dark:text-green-200">
+                          <button
+                            onClick={() => handleEditClick(voter)}
+                            className="px-3 py-1 text-xs font-medium text-green-600 transition-colors bg-green-100 rounded-lg hover:bg-green-200 dark:bg-green-900 dark:text-green-200"
+                          >
                             Edit
                           </button>
                           {voter.role === "voter" && (
@@ -360,6 +409,246 @@ export default function RegisteredVoters() {
           </div>
         </ComponentCard>
       </div>
+
+      {/* View Modal */}
+      <Modal
+        isOpen={isViewOpen}
+        onClose={closeViewModal}
+        className="max-w-[700px] m-4"
+      >
+        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="px-2 pr-14">
+            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Voter Details
+            </h4>
+            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+              View detailed information about this voter.
+            </p>
+          </div>
+
+          {selectedVoter && (
+            <div className="px-2">
+              <div className="mb-6 flex items-center gap-4">
+                <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold text-2xl">
+                  {selectedVoter.firstName.charAt(0)}
+                  {selectedVoter.lastName.charAt(0)}
+                </div>
+                <div>
+                  <h5 className="text-xl font-semibold text-gray-800 dark:text-white/90">
+                    {selectedVoter.firstName} {selectedVoter.lastName}
+                  </h5>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    ID: {selectedVoter.userId}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                    Email Address
+                  </p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {selectedVoter.email}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                    Location
+                  </p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {selectedVoter.location}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                    Role
+                  </p>
+                  <Badge size="sm" color={getRoleColor(selectedVoter.role)}>
+                    {selectedVoter.role.charAt(0).toUpperCase() +
+                      selectedVoter.role.slice(1)}
+                  </Badge>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                    Available Votes
+                  </p>
+                  <Badge
+                    size="sm"
+                    color={getVotesColor(selectedVoter.availableVotes)}
+                  >
+                    {selectedVoter.availableVotes} votes
+                  </Badge>
+                </div>
+
+                <div className="col-span-2">
+                  <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                    Member Since
+                  </p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                    {formatDate(selectedVoter.createdAt)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-8">
+                <Button size="sm" variant="outline" onClick={closeViewModal}>
+                  Close
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    closeViewModal();
+                    handleEditClick(selectedVoter);
+                  }}
+                >
+                  Edit Voter
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={isEditOpen}
+        onClose={closeEditModal}
+        className="max-w-[700px] m-4"
+      >
+        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="px-2 pr-14">
+            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Edit Voter Information
+            </h4>
+            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+              Update voter details and preferences.
+            </p>
+          </div>
+
+          {editFormData && (
+            <form
+              className="flex flex-col"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveEdit();
+              }}
+            >
+              <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>First Name</Label>
+                    <Input
+                      name="firstName"
+                      type="text"
+                      value={editFormData.firstName}
+                      onChange={handleEditInputChange}
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Last Name</Label>
+                    <Input
+                      name="lastName"
+                      type="text"
+                      value={editFormData.lastName}
+                      onChange={handleEditInputChange}
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Email Address</Label>
+                    <Input
+                      name="email"
+                      type="email"
+                      value={editFormData.email}
+                      onChange={handleEditInputChange}
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Location</Label>
+                    <Input
+                      name="location"
+                      type="text"
+                      value={editFormData.location}
+                      onChange={handleEditInputChange}
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Available Votes</Label>
+                    <Input
+                      name="availableVotes"
+                      type="number"
+                      value={editFormData.availableVotes}
+                      onChange={(e) =>
+                        setEditFormData((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                availableVotes: parseInt(e.target.value) || 0,
+                              }
+                            : null
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Role</Label>
+                    <select
+                      name="role"
+                      value={editFormData.role}
+                      onChange={(e) =>
+                        setEditFormData((prev) =>
+                          prev ? { ...prev, role: e.target.value } : null
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="voter">Voter</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>User ID</Label>
+                    <Input
+                      type="text"
+                      value={editFormData.userId}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Member Since</Label>
+                    <Input
+                      type="text"
+                      value={formatDate(editFormData.createdAt)}
+                      disabled
+                      className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+                <Button size="sm" variant="outline" onClick={closeEditModal}>
+                  Cancel
+                </Button>
+                <Button size="sm" type="submit">
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
+      </Modal>
     </>
   );
 }

@@ -10,6 +10,9 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import Badge from "../../components/ui/badge/Badge";
+import { Modal } from "../../components/ui/modal";
+import { useModal } from "../../hooks/useModal";
+import Button from "../../components/ui/button/Button";
 
 interface VotingActivity {
   voteId: string;
@@ -140,6 +143,20 @@ export default function VotingActivity() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [selectedActivity, setSelectedActivity] =
+    useState<VotingActivity | null>(null);
+  const [flagReason, setFlagReason] = useState("");
+
+  const {
+    isOpen: isDetailsOpen,
+    openModal: openDetailsModal,
+    closeModal: closeDetailsModal,
+  } = useModal();
+  const {
+    isOpen: isFlagOpen,
+    openModal: openFlagModal,
+    closeModal: closeFlagModal,
+  } = useModal();
 
   const categories = [
     ...new Set(votingActivityData.map((activity) => activity.category)),
@@ -203,6 +220,28 @@ export default function VotingActivity() {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${diffDays}d ago`;
+  };
+
+  const handleDetailsClick = (activity: VotingActivity) => {
+    setSelectedActivity(activity);
+    openDetailsModal();
+  };
+
+  const handleFlagClick = (activity: VotingActivity) => {
+    setSelectedActivity(activity);
+    setFlagReason("");
+    openFlagModal();
+  };
+
+  const handleSubmitFlag = () => {
+    // TODO: Implement actual flag submission logic with API call
+    console.log(
+      "Flagging vote:",
+      selectedActivity?.voteId,
+      "Reason:",
+      flagReason
+    );
+    closeFlagModal();
   };
 
   return (
@@ -426,10 +465,16 @@ export default function VotingActivity() {
                       </TableCell>
                       <TableCell className="px-4 py-3 text-center">
                         <div className="flex justify-center space-x-2">
-                          <button className="px-3 py-1 text-xs font-medium text-blue-600 transition-colors bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200">
+                          <button
+                            onClick={() => handleDetailsClick(activity)}
+                            className="px-3 py-1 text-xs font-medium text-blue-600 transition-colors bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200"
+                          >
                             Details
                           </button>
-                          <button className="px-3 py-1 text-xs font-medium text-red-600 transition-colors bg-red-100 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-200">
+                          <button
+                            onClick={() => handleFlagClick(activity)}
+                            className="px-3 py-1 text-xs font-medium text-red-600 transition-colors bg-red-100 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-200"
+                          >
                             Flag
                           </button>
                         </div>
@@ -460,6 +505,160 @@ export default function VotingActivity() {
           </div>
         </ComponentCard>
       </div>
+
+      {/* Details Modal */}
+      <Modal
+        isOpen={isDetailsOpen}
+        onClose={closeDetailsModal}
+        className="max-w-[800px] m-4"
+      >
+        <div className="no-scrollbar relative w-full max-w-[800px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="px-2 pr-14">
+            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Vote Details
+            </h4>
+            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+              Complete information about this voting activity.
+            </p>
+          </div>
+
+          {selectedActivity && (
+            <div className="px-2">
+              {/* Vote ID Section */}
+              <div className="mb-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Vote ID
+                    </p>
+                    <p className="text-lg font-semibold text-gray-800 dark:text-white/90">
+                      #{selectedActivity.voteId}
+                    </p>
+                  </div>
+                  <Badge size="sm" color="success">
+                    Verified
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Voter Information */}
+              <div className="mb-6">
+                <h5 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                  Voter Information
+                </h5>
+                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold text-xl">
+                    {selectedActivity.voter.firstName.charAt(0)}
+                    {selectedActivity.voter.lastName.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800 dark:text-white/90">
+                      {selectedActivity.voter.firstName}{" "}
+                      {selectedActivity.voter.lastName}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {selectedActivity.voter.email}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      User ID: {selectedActivity.voter.userId}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Nominee Information */}
+              <div className="mb-6">
+                <h5 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                  Voted For
+                </h5>
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-semibold text-xl">
+                      {selectedActivity.nominee.stageName.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800 dark:text-white/90 text-lg">
+                        {selectedActivity.nominee.stageName}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {selectedActivity.nominee.artistName}
+                      </p>
+                      <div className="mt-2">
+                        <Badge size="sm" color="default">
+                          {selectedActivity.category}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vote Metadata */}
+              <div className="mb-6">
+                <h5 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                  Vote Metadata
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Timestamp
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {formatDateTime(selectedActivity.votedAt)}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      ({getTimeAgo(selectedActivity.votedAt)})
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Location
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {selectedActivity.location}
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      IP Address
+                    </p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                      {selectedActivity.ipAddress}
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Category
+                    </p>
+                    <Badge size="sm" color="default">
+                      {selectedActivity.category}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-8">
+                <Button size="sm" variant="outline" onClick={closeDetailsModal}>
+                  Close
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    closeDetailsModal();
+                    handleFlagClick(selectedActivity);
+                  }}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Flag Vote
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </>
   );
 }

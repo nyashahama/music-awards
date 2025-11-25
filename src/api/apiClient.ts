@@ -3,7 +3,9 @@ import axios, { AxiosError, type AxiosInstance } from "axios";
 console.log("API URL from env:", import.meta.env.VITE_API_URL);
 
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    "https://music-awards-server.onrender.com/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

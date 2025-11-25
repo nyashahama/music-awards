@@ -78,6 +78,7 @@ function UserMetaCard() {
 
   // Format the created date for display
   const formatDate = (dateString: string) => {
+    if (!dateString) return "Unknown";
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -362,7 +363,7 @@ function UserMetaCard() {
                     <Label>Member Since</Label>
                     <Input
                       type="text"
-                      value={formatDate(user?.created_at)}
+                      value={formatDate(user?.created_at || "")}
                       disabled
                       className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
                     />

@@ -305,7 +305,7 @@ export default function AddNominee() {
                       id="releaseDate"
                       label="Release Date"
                       placeholder="Select release date"
-                      onChange={(dates, dateString) => {
+                      onChange={(_, dateString) => {
                         setFormData((prev) => ({
                           ...prev,
                           releaseDate: dateString,

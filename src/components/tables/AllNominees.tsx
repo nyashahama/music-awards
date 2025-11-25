@@ -102,7 +102,7 @@ export default function AllNominees() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedNominee, setSelectedNominee] = useState<Nominee | null>(null);
+  //const [selectedNominee, setSelectedNominee] = useState<Nominee | null>(null);
   const [editFormData, setEditFormData] = useState<Nominee | null>(null);
 
   const {

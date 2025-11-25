@@ -152,11 +152,11 @@ export default function VotingActivity() {
     openModal: openDetailsModal,
     closeModal: closeDetailsModal,
   } = useModal();
-  const {
-    isOpen: isFlagOpen,
-    openModal: openFlagModal,
-    closeModal: closeFlagModal,
-  } = useModal();
+  // const {
+  //   isOpen: isFlagOpen,
+  //   openModal: openFlagModal,
+  //   closeModal: closeFlagModal,
+  // } = useModal();
 
   const categories = [
     ...new Set(votingActivityData.map((activity) => activity.category)),
@@ -230,19 +230,19 @@ export default function VotingActivity() {
   const handleFlagClick = (activity: VotingActivity) => {
     setSelectedActivity(activity);
     setFlagReason("");
-    openFlagModal();
+    console.log(flagReason);
   };
 
-  const handleSubmitFlag = () => {
-    // TODO: Implement actual flag submission logic with API call
-    console.log(
-      "Flagging vote:",
-      selectedActivity?.voteId,
-      "Reason:",
-      flagReason
-    );
-    closeFlagModal();
-  };
+  // const handleSubmitFlag = () => {
+  //   // TODO: Implement actual flag submission logic with API call
+  //   console.log(
+  //     "Flagging vote:",
+  //     selectedActivity?.voteId,
+  //     "Reason:",
+  //     flagReason
+  //   );
+  //   closeFlagModal();
+  // };
 
   return (
     <>

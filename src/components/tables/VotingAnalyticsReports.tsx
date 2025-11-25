@@ -33,10 +33,10 @@ interface TopNominee {
   imageUrl: string;
 }
 
-interface VotingPattern {
-  hour: string;
-  votes: number;
-}
+// interface VotingPattern {
+//   hour: string;
+//   votes: number;
+// }
 
 // Mock data
 const categoryPerformanceData: CategoryPerformance[] = [

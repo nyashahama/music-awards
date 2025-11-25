@@ -16,7 +16,7 @@ export default function Alerts() {
           <Alert
             variant="success"
             title="Success Message"
-            message="Be cautious when performing this action."
+            children="Be cautious when performing this action."
             showLink={true}
             linkHref="/"
             linkText="Learn more"
@@ -24,7 +24,7 @@ export default function Alerts() {
           <Alert
             variant="success"
             title="Success Message"
-            message="Be cautious when performing this action."
+            children="Be cautious when performing this action."
             showLink={false}
           />
         </ComponentCard>
@@ -32,7 +32,7 @@ export default function Alerts() {
           <Alert
             variant="warning"
             title="Warning Message"
-            message="Be cautious when performing this action."
+            children="Be cautious when performing this action."
             showLink={true}
             linkHref="/"
             linkText="Learn more"
@@ -40,7 +40,7 @@ export default function Alerts() {
           <Alert
             variant="warning"
             title="Warning Message"
-            message="Be cautious when performing this action."
+            children="Be cautious when performing this action."
             showLink={false}
           />
         </ComponentCard>{" "}
@@ -48,7 +48,7 @@ export default function Alerts() {
           <Alert
             variant="error"
             title="Error Message"
-            message="Be cautious when performing this action."
+            children="Be cautious when performing this action."
             showLink={true}
             linkHref="/"
             linkText="Learn more"
@@ -56,7 +56,7 @@ export default function Alerts() {
           <Alert
             variant="error"
             title="Error Message"
-            message="Be cautious when performing this action."
+            children="Be cautious when performing this action."
             showLink={false}
           />
         </ComponentCard>{" "}
@@ -64,7 +64,7 @@ export default function Alerts() {
           <Alert
             variant="info"
             title="Info Message"
-            message="Be cautious when performing this action."
+            children="Be cautious when performing this action."
             showLink={true}
             linkHref="/"
             linkText="Learn more"
@@ -72,7 +72,7 @@ export default function Alerts() {
           <Alert
             variant="info"
             title="Info Message"
-            message="Be cautious when performing this action."
+            children="Be cautious when performing this action."
             showLink={false}
           />
         </ComponentCard>

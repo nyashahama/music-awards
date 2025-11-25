@@ -259,9 +259,8 @@ export default function CategoriesManagement() {
       )}
 
       <div className="space-y-6">
-        <ComponentCard
-          title="All Categories"
-          action={
+        <ComponentCard title="All Categories">
+          <div className="flex justify-end mb-4">
             <Link to="/categories/add">
               <Button size="sm">
                 <svg
@@ -280,8 +279,7 @@ export default function CategoriesManagement() {
                 Add Category
               </Button>
             </Link>
-          }
-        >
+          </div>
           {/* Summary Stats */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white">

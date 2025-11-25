@@ -55,6 +55,7 @@ export const useCategories = (): UseCategoriesReturn => {
       console.log("Category created successfully", response.name);
     } catch (err: any) {
       const msg = err?.response?.data?.error ?? "Failed to create category";
+      console.log("failed", error);
       setError(msg);
       setCategories((prev) => ({ ...prev, isLoading: false }));
       throw err;

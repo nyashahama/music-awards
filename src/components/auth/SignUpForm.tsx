@@ -16,6 +16,7 @@ type FormErrors = {
   password?: string;
   terms?: string;
   location?: string;
+  manualLocation?: string;
 };
 
 export default function SignUpForm() {
@@ -49,7 +50,6 @@ export default function SignUpForm() {
   const {
     location,
     isLoading: locationLoading,
-    error: locationError,
     detectionFailed,
   } = useLocation();
 

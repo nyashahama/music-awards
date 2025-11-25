@@ -327,6 +327,7 @@ export const useUsers = (options?: UseUsersOptions): UseUsersReturn => {
       setUsers((p) => ({ ...p, isLoading: false }));
       const msg = err?.response?.data?.error ?? "Failed to fetch users";
       setError(msg);
+      console.log("failed", error);
       options?.onError?.(msg);
       throw err;
     }

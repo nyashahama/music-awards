@@ -86,3 +86,4 @@ The **Music Awards Voting Dashboard** is a comprehensive platform built with **R
 
 1. **Clone the repository**
 ```bash
+git clone https://github.com/nyashahama/music-awards.git

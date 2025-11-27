@@ -2,6 +2,7 @@ import { FC } from "react";
 
 interface FileInputProps {
   className?: string;
+  disabled?: boolean;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 

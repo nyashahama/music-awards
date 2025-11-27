@@ -5,6 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 import Alert from "../ui/alert/Alert";
+import { useAuth } from "../../hooks/useUsers";
 
 type FormErrors = {
   password?: string;
@@ -37,8 +38,8 @@ export default function ResetPasswordForm() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  // TODO: Import and use your auth hook if available
-  // const { resetPassword, verifyResetToken } = useAuth();
+  // Use the auth hook
+  const { resetPassword, validateResetToken } = useAuth();
 
   // Verify token on mount
   useEffect(() => {
@@ -54,12 +55,8 @@ export default function ResetPasswordForm() {
       }
 
       try {
-        // TODO: Replace with your actual API call
-        // await verifyResetToken(token);
-
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
+        // Use the actual validateResetToken function
+        await validateResetToken(token);
         setTokenValid(true);
       } catch (error: any) {
         setTokenValid(false);
@@ -74,7 +71,7 @@ export default function ResetPasswordForm() {
     };
 
     verifyToken();
-  }, [token]);
+  }, [token, validateResetToken]);
 
   // Auto-focus password field when token is valid
   useEffect(() => {
@@ -137,11 +134,15 @@ export default function ResetPasswordForm() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with your actual API call
-      // await resetPassword(token, formData.password);
+      if (!token) {
+        throw new Error("Reset token is missing");
+      }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Use the actual resetPassword function
+      await resetPassword({
+        token,
+        new_password: formData.password,
+      });
 
       setResetSuccess(true);
       setAlert({

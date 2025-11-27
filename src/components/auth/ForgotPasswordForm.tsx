@@ -5,6 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 import Alert from "../ui/alert/Alert";
+import { useAuth } from "../../hooks/useUsers";
 
 type FormErrors = {
   email?: string;
@@ -28,8 +29,8 @@ export default function ForgotPasswordForm() {
 
   const emailInputRef = useRef<HTMLInputElement>(null);
 
-  // TODO: Import and use your auth hook if available
-  // const { forgotPassword } = useAuth();
+  // Use the auth hook
+  const { forgotPassword } = useAuth();
 
   // Auto-focus email field on mount
   useEffect(() => {
@@ -90,11 +91,8 @@ export default function ForgotPasswordForm() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with your actual API call
-      // await forgotPasswordAPI(formData.email.trim());
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Use the actual forgotPassword function
+      await forgotPassword({ email: formData.email.trim() });
 
       setEmailSent(true);
       setAlert({
@@ -134,11 +132,8 @@ export default function ForgotPasswordForm() {
   const handleResendEmail = async () => {
     setIsLoading(true);
     try {
-      // TODO: Replace with your actual API call
-      // await forgotPasswordAPI(formData.email.trim());
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Use the actual forgotPassword function for resend
+      await forgotPassword({ email: formData.email.trim() });
 
       setAlert({
         variant: "success",

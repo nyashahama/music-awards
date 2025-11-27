@@ -13,6 +13,7 @@ type PropsType = {
   defaultDate?: DateOption;
   label?: string;
   placeholder?: string;
+  disabled?: boolean;
 };
 
 export default function DatePicker({

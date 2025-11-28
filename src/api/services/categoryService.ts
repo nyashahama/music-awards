@@ -7,6 +7,13 @@ export interface Category {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Extended fields for UI (optional, may come from separate endpoint)
+  slug?: string;
+  icon?: string;
+  nomineesCount?: number;
+  votesCount?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface CreateCategoryRequest {

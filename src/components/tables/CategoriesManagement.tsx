@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -17,86 +17,90 @@ import { Modal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
+import { useCategories } from "../../hooks";
+import { Category, UpdateCategoryRequest } from "../../api/services";
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  nomineesCount: number;
-  votesCount: number;
-  status: "active" | "inactive" | "upcoming";
-  startDate: string;
-  endDate: string;
-  icon: string;
-}
+// interface Category {
+//   id: string;
+//   name: string;
+//   slug: string;
+//   description: string;
+//   nomineesCount: number;
+//   votesCount: number;
+//   status: "active" | "inactive" | "upcoming";
+//   startDate: string;
+//   endDate: string;
+//   icon: string;
+// }
 
-// Mock data - replace with actual API call
-const mockCategories: Category[] = [
-  {
-    id: "1",
-    name: "Best Male Artist",
-    slug: "best-male",
-    description: "Vote for your favorite male artist of the year",
-    nomineesCount: 8,
-    votesCount: 15420,
-    status: "active",
-    startDate: "2024-01-01",
-    endDate: "2024-12-31",
-    icon: "👨‍🎤",
-  },
-  {
-    id: "2",
-    name: "Best Female Artist",
-    slug: "best-female",
-    description: "Vote for your favorite female artist of the year",
-    nomineesCount: 6,
-    votesCount: 12890,
-    status: "active",
-    startDate: "2024-01-01",
-    endDate: "2024-12-31",
-    icon: "👩‍🎤",
-  },
-  {
-    id: "3",
-    name: "Song of the Year",
-    slug: "song-year",
-    description: "Vote for the song of the year",
-    nomineesCount: 10,
-    votesCount: 18750,
-    status: "active",
-    startDate: "2024-01-01",
-    endDate: "2024-12-31",
-    icon: "🎵",
-  },
-  {
-    id: "4",
-    name: "Best Collaboration",
-    slug: "collaboration",
-    description: "Vote for the best collaboration of the year",
-    nomineesCount: 5,
-    votesCount: 9340,
-    status: "active",
-    startDate: "2024-01-01",
-    endDate: "2024-12-31",
-    icon: "🤝",
-  },
-  {
-    id: "5",
-    name: "Best Newcomer",
-    slug: "newcomer",
-    description: "Vote for the best newcomer artist of the year",
-    nomineesCount: 7,
-    votesCount: 7820,
-    status: "active",
-    startDate: "2024-01-01",
-    endDate: "2024-12-31",
-    icon: "⭐",
-  },
-];
+// // Mock data - replace with actual API call
+// const mockCategories: Category[] = [
+//   {
+//     id: "1",
+//     name: "Best Male Artist",
+//     slug: "best-male",
+//     description: "Vote for your favorite male artist of the year",
+//     nomineesCount: 8,
+//     votesCount: 15420,
+//     status: "active",
+//     startDate: "2024-01-01",
+//     endDate: "2024-12-31",
+//     icon: "👨‍🎤",
+//   },
+//   {
+//     id: "2",
+//     name: "Best Female Artist",
+//     slug: "best-female",
+//     description: "Vote for your favorite female artist of the year",
+//     nomineesCount: 6,
+//     votesCount: 12890,
+//     status: "active",
+//     startDate: "2024-01-01",
+//     endDate: "2024-12-31",
+//     icon: "👩‍🎤",
+//   },
+//   {
+//     id: "3",
+//     name: "Song of the Year",
+//     slug: "song-year",
+//     description: "Vote for the song of the year",
+//     nomineesCount: 10,
+//     votesCount: 18750,
+//     status: "active",
+//     startDate: "2024-01-01",
+//     endDate: "2024-12-31",
+//     icon: "🎵",
+//   },
+//   {
+//     id: "4",
+//     name: "Best Collaboration",
+//     slug: "collaboration",
+//     description: "Vote for the best collaboration of the year",
+//     nomineesCount: 5,
+//     votesCount: 9340,
+//     status: "active",
+//     startDate: "2024-01-01",
+//     endDate: "2024-12-31",
+//     icon: "🤝",
+//   },
+//   {
+//     id: "5",
+//     name: "Best Newcomer",
+//     slug: "newcomer",
+//     description: "Vote for the best newcomer artist of the year",
+//     nomineesCount: 7,
+//     votesCount: 7820,
+//     status: "active",
+//     startDate: "2024-01-01",
+//     endDate: "2024-12-31",
+//     icon: "⭐",
+//   },
+// ];
 
 export default function CategoriesManagement() {
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  // const [categories, setCategories] = useState<Category[]>();
+  const { categories, updateCategory, deleteCategory, listCategories } =
+    useCategories();
   const [alert, setAlert] = useState<{
     variant: "success" | "error" | "warning" | "info";
     title: string;
@@ -110,6 +114,11 @@ export default function CategoriesManagement() {
     null
   );
   const [editFormData, setEditFormData] = useState<Category | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    listCategories();
+  }, []);
 
   const {
     isOpen: isViewOpen,
@@ -131,12 +140,7 @@ export default function CategoriesManagement() {
     if (!categoryToDelete) return;
 
     try {
-      // TODO: Replace with actual API call
-      // await deleteCategory(categoryToDelete.id);
-
-      setCategories((prev) =>
-        prev.filter((cat) => cat.id !== categoryToDelete.id)
-      );
+      await deleteCategory(categoryToDelete.category_id);
 
       setAlert({
         variant: "success",
@@ -160,14 +164,13 @@ export default function CategoriesManagement() {
 
   const handleStatusToggle = async (category: Category) => {
     try {
-      // TODO: Replace with actual API call
-      const newStatus = category.status === "active" ? "inactive" : "active";
+      const newStatus = category.is_active ? "inactive" : "active";
 
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.id === category.id ? { ...cat, status: newStatus } : cat
-        )
-      );
+      // setCategories((prev) =>
+      //   prev.map((cat) =>
+      //     cat.id === category.id ? { ...cat, status: newStatus } : cat
+      //   )
+      // );
 
       setAlert({
         variant: "success",
@@ -186,7 +189,8 @@ export default function CategoriesManagement() {
     }
   };
 
-  const handleViewClick = (category: Category) => {
+  const handleViewClick = async (category: Category) => {
+    // await getCategory(category.category_id);
     setSelectedCategory(category);
     openViewModal();
   };
@@ -205,25 +209,38 @@ export default function CategoriesManagement() {
     setEditFormData((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editFormData) return;
+    setIsUpdating(true);
+    try {
+      const updateData: UpdateCategoryRequest = {
+        name: editFormData.name,
+        description: editFormData.description,
+      };
+      await updateCategory(editFormData.category_id, updateData);
+      setIsUpdating(false);
+      setAlert({
+        variant: "success",
+        title: "Category Updated",
+        message: `${editFormData.name} has been successfully updated.`,
+      });
 
-    // TODO: Implement actual save logic with API call
-    setCategories((prev) =>
-      prev.map((cat) => (cat.id === editFormData.id ? editFormData : cat))
-    );
-
-    setAlert({
-      variant: "success",
-      title: "Category Updated",
-      message: `${editFormData.name} has been successfully updated.`,
-    });
-
-    setTimeout(() => setAlert(null), 5000);
-    closeEditModal();
+      setTimeout(() => setAlert(null), 5000);
+      closeEditModal();
+    } catch (error) {
+      setAlert({
+        variant: "error",
+        title: "Category Update Failed",
+        message: "Failed to update category.",
+      });
+      setTimeout(() => setAlert(null), 5000);
+    }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) {
+      return "N?A";
+    }
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
@@ -231,17 +248,21 @@ export default function CategoriesManagement() {
     });
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: boolean) => {
     switch (status) {
-      case "active":
+      case true:
         return "success";
-      case "inactive":
-        return "default";
-      case "upcoming":
-        return "warning";
+      // case false:
+      //   return "default";
+      // case "upcoming":
+      //   return "warning";
       default:
         return "default";
     }
+  };
+
+  const getStatusLabel = (status: boolean) => {
+    return status ? "Active" : "Inactive";
   };
 
   return (
@@ -283,25 +304,33 @@ export default function CategoriesManagement() {
           {/* Summary Stats */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white">
-              <div className="text-2xl font-bold">{categories.length}</div>
+              <div className="text-2xl font-bold">
+                {categories.categories.length}
+              </div>
               <div className="text-sm opacity-90">Total Categories</div>
             </div>
             <div className="p-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg text-white">
               <div className="text-2xl font-bold">
-                {categories.filter((cat) => cat.status === "active").length}
+                {
+                  categories.categories.filter((cat) => cat.is_active === true)
+                    .length
+                }
               </div>
               <div className="text-sm opacity-90">Active Categories</div>
             </div>
             <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white">
               <div className="text-2xl font-bold">
-                {categories.reduce((sum, cat) => sum + cat.nomineesCount, 0)}
+                {categories.categories.reduce(
+                  (sum, cat) => sum + (cat.nomineesCount || 0),
+                  0
+                )}
               </div>
               <div className="text-sm opacity-90">Total Nominees</div>
             </div>
             <div className="p-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-white">
               <div className="text-2xl font-bold">
-                {categories
-                  .reduce((sum, cat) => sum + cat.votesCount, 0)
+                {categories.categories
+                  .reduce((sum, cat) => sum + (cat.votesCount || 0), 0)
                   .toLocaleString()}
               </div>
               <div className="text-sm opacity-90">Total Votes</div>
@@ -353,9 +382,9 @@ export default function CategoriesManagement() {
                 </TableHeader>
 
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {categories.map((category) => (
+                  {categories.categories.map((category) => (
                     <TableRow
-                      key={category.id}
+                      key={category.category_id}
                       className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
                     >
                       <TableCell className="px-5 py-4 sm:px-6 text-start">
@@ -376,12 +405,12 @@ export default function CategoriesManagement() {
                       </TableCell>
                       <TableCell className="px-4 py-3 text-start">
                         <span className="font-medium text-gray-800 text-theme-sm dark:text-white">
-                          {category.nomineesCount}
+                          {category.nomineesCount || 0}
                         </span>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-start">
                         <span className="font-semibold text-gray-800 text-theme-sm dark:text-white">
-                          {category.votesCount.toLocaleString()}
+                          {(category.votesCount || 0).toLocaleString()}
                         </span>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-start">
@@ -391,9 +420,9 @@ export default function CategoriesManagement() {
                         >
                           <Badge
                             size="sm"
-                            color={getStatusColor(category.status)}
+                            color={getStatusColor(category.is_active)}
                           >
-                            {category.status}
+                            {getStatusLabel(category.is_active)}
                           </Badge>
                         </button>
                       </TableCell>
@@ -455,7 +484,7 @@ export default function CategoriesManagement() {
                     {selectedCategory.name}
                   </h5>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    ID: {selectedCategory.id}
+                    ID: {selectedCategory.category_id}
                   </p>
                 </div>
               </div>
@@ -476,9 +505,9 @@ export default function CategoriesManagement() {
                   </p>
                   <Badge
                     size="sm"
-                    color={getStatusColor(selectedCategory.status)}
+                    color={getStatusColor(selectedCategory.is_active)}
                   >
-                    {selectedCategory.status}
+                    {selectedCategory.is_active}
                   </Badge>
                 </div>
 
@@ -496,7 +525,7 @@ export default function CategoriesManagement() {
                     Total Votes
                   </p>
                   <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                    {selectedCategory.votesCount.toLocaleString()}
+                    {(selectedCategory.votesCount || 0).toLocaleString()}
                   </p>
                 </div>
 
@@ -539,7 +568,7 @@ export default function CategoriesManagement() {
                     handleEditClick(selectedCategory);
                   }}
                 >
-                  Edit Category
+                  {isUpdating ? "Edit..." : "Edit Category"}
                 </Button>
               </div>
             </div>
@@ -617,14 +646,13 @@ export default function CategoriesManagement() {
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Status</Label>
                     <select
-                      name="status"
-                      value={editFormData.status}
+                      name="is_active"
+                      value={editFormData.is_active ? "active" : "inactive"}
                       onChange={handleEditInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
-                      <option value="upcoming">Upcoming</option>
                     </select>
                   </div>
 
@@ -690,7 +718,7 @@ export default function CategoriesManagement() {
                     <Label>Category ID</Label>
                     <Input
                       type="text"
-                      value={editFormData.id}
+                      value={editFormData.category_id}
                       disabled
                       className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
                     />
@@ -703,7 +731,7 @@ export default function CategoriesManagement() {
                   Cancel
                 </Button>
                 <Button size="sm" type="submit">
-                  Save Changes
+                  {isUpdating ? "Save..." : "Save Changes"}
                 </Button>
               </div>
             </form>

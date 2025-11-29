@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import Badge from "../../components/ui/badge/Badge";
+import { useVotes, useCategories, useNominees } from "../../hooks";
 
 interface NomineeResult {
   nomineeId: string;
@@ -23,8 +24,8 @@ interface CategoryResult {
   nominees: NomineeResult[];
 }
 
-// Mock data - replace with actual API call
-const liveResultsData: CategoryResult[] = [
+// Mock data as fallback
+const mockLiveResultsData: CategoryResult[] = [
   {
     categoryId: "1",
     name: "Best Male Artist",
@@ -91,72 +92,122 @@ const liveResultsData: CategoryResult[] = [
       },
     ],
   },
-  {
-    categoryId: "3",
-    name: "Song of the Year",
-    description: "Most popular song of the year",
-    totalVotes: 52800,
-    nominees: [
-      {
-        nomineeId: "6",
-        name: "Garikai Machembere",
-        stageName: "Winky D - Disappear",
-        imageUrl: "/images/artists/artist-05.jpg",
-        votes: 28900,
-        percentage: 54.7,
-        rank: 1,
-        trend: "up",
-      },
-      {
-        nomineeId: "7",
-        name: "Desmond Chideme",
-        stageName: "Stunner - Dzimba Remabwe",
-        imageUrl: "/images/artists/artist-01.jpg",
-        votes: 23900,
-        percentage: 45.3,
-        rank: 2,
-        trend: "down",
-      },
-    ],
-  },
-  {
-    categoryId: "4",
-    name: "Best Newcomer",
-    description: "Best new artist of the year",
-    totalVotes: 28600,
-    nominees: [
-      {
-        nomineeId: "8",
-        name: "Talent Mapeza",
-        stageName: "Young Talent",
-        imageUrl: "/images/artists/newcomer-01.jpg",
-        votes: 17800,
-        percentage: 62.2,
-        rank: 1,
-        trend: "up",
-      },
-      {
-        nomineeId: "9",
-        name: "Rising Star",
-        stageName: "New Wave",
-        imageUrl: "/images/artists/newcomer-02.jpg",
-        votes: 10800,
-        percentage: 37.8,
-        rank: 2,
-        trend: "stable",
-      },
-    ],
-  },
 ];
 
 export default function LiveResults() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [liveResults, setLiveResults] = useState<CategoryResult[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
+  const { votes, getAllVotes } = useVotes();
+  const { categories, listCategories } = useCategories();
+  const { nominees, getAllNominees } = useNominees();
+
+  useEffect(() => {
+    fetchLiveResults();
+
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchLiveResults();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchLiveResults = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Fetch all required data
+      await Promise.all([getAllVotes(), listCategories(), getAllNominees()]);
+
+      // Process the data to generate live results
+      processLiveResults();
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error("Failed to fetch live results:", err);
+      setError("Failed to load live results. Using sample data.");
+      // Fallback to mock data
+      setLiveResults(mockLiveResultsData);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const processLiveResults = () => {
+    const categoryResults: CategoryResult[] = categories.categories.map(
+      (category) => {
+        // Get votes for this category
+        const categoryVotes = votes.votes.filter(
+          (vote) => vote.category?.category_id === category.category_id
+        );
+
+        const totalVotes = categoryVotes.length;
+
+        // Group votes by nominee and count them
+        const nomineeVotesMap = new Map<string, number>();
+
+        categoryVotes.forEach((vote) => {
+          const nomineeId = vote.nominee?.nominee_id;
+          if (nomineeId) {
+            nomineeVotesMap.set(
+              nomineeId,
+              (nomineeVotesMap.get(nomineeId) || 0) + 1
+            );
+          }
+        });
+
+        // Create nominee results
+        const nomineeResults: NomineeResult[] = Array.from(
+          nomineeVotesMap.entries()
+        )
+          .map(([nomineeId, voteCount]) => {
+            const nominee = nominees.nominees.find(
+              (n) => n.nominee_id === nomineeId
+            );
+            const percentage =
+              totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
+
+            return {
+              nomineeId,
+              name: nominee?.name || "Unknown Artist",
+              stageName: nominee?.name || "Unknown", // You might want to add stageName to your nominee interface
+              imageUrl: nominee?.image_url || "/images/artists/default.jpg",
+              votes: voteCount,
+              percentage: parseFloat(percentage.toFixed(1)),
+              rank: 0, // Will be set after sorting
+              trend: "stable" as const, // You can implement trend calculation based on historical data
+            };
+          })
+          .sort((a, b) => b.votes - a.votes)
+          .map((nominee, index) => ({
+            ...nominee,
+            rank: index + 1,
+          }));
+
+        return {
+          categoryId: category.category_id,
+          name: category.name,
+          description: category.description || `${category.name} category`,
+          totalVotes,
+          nominees: nomineeResults,
+        };
+      }
+    );
+
+    setLiveResults(
+      categoryResults.length > 0 ? categoryResults : mockLiveResultsData
+    );
+  };
 
   const filteredResults =
     selectedCategory === "all"
-      ? liveResultsData
-      : liveResultsData.filter((cat) => cat.categoryId === selectedCategory);
+      ? liveResults
+      : liveResults.filter((cat) => cat.categoryId === selectedCategory);
 
   const formatVotes = (votes: number) => {
     if (votes >= 1000) {
@@ -224,10 +275,44 @@ export default function LiveResults() {
     return `#${rank}`;
   };
 
-  const totalVotesAcrossAll = liveResultsData.reduce(
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return "Today";
+  };
+
+  const totalVotesAcrossAll = liveResults.reduce(
     (sum, cat) => sum + cat.totalVotes,
     0
   );
+
+  const topNominee = liveResults[0]?.nominees[0];
+
+  if (isLoading) {
+    return (
+      <>
+        <PageMeta
+          title="Live Results | Zimdancehall Music Awards"
+          description="View real-time voting results across all categories"
+        />
+        <PageBreadcrumb pageTitle="Live Results" />
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              Loading live results...
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -236,6 +321,27 @@ export default function LiveResults() {
         description="View real-time voting results across all categories"
       />
       <PageBreadcrumb pageTitle="Live Results" />
+
+      {error && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-800">
+          <div className="flex items-center">
+            <svg
+              className="w-5 h-5 text-yellow-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="text-yellow-700 dark:text-yellow-400">
+              {error}
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* Overall Stats */}
@@ -277,7 +383,7 @@ export default function LiveResults() {
                 </svg>
               </div>
             </div>
-            <div className="text-3xl font-bold">{liveResultsData.length}</div>
+            <div className="text-3xl font-bold">{liveResults.length}</div>
             <div className="text-xs opacity-75 mt-1">Active voting</div>
           </div>
 
@@ -289,10 +395,10 @@ export default function LiveResults() {
               </div>
             </div>
             <div className="text-lg font-bold truncate">
-              {liveResultsData[0]?.nominees[0]?.stageName || "N/A"}
+              {topNominee?.stageName || "N/A"}
             </div>
             <div className="text-xs opacity-75 mt-1">
-              {formatVotes(liveResultsData[0]?.nominees[0]?.votes || 0)} votes
+              {formatVotes(topNominee?.votes || 0)} votes
             </div>
           </div>
 
@@ -313,7 +419,7 @@ export default function LiveResults() {
                 </svg>
               </div>
             </div>
-            <div className="text-lg font-bold">Just now</div>
+            <div className="text-lg font-bold">{getTimeAgo(lastUpdated)}</div>
             <div className="text-xs opacity-75 mt-1">Auto-refreshing</div>
           </div>
         </div>
@@ -332,7 +438,7 @@ export default function LiveResults() {
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                   <option value="all">All Categories</option>
-                  {liveResultsData.map((category) => (
+                  {liveResults.map((category) => (
                     <option
                       key={category.categoryId}
                       value={category.categoryId}

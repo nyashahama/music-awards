@@ -7,6 +7,7 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import Alert from "../../components/ui/alert/Alert";
+import { useCategories } from "../../hooks";
 
 type FormErrors = {
   name?: string;
@@ -16,27 +17,36 @@ type FormErrors = {
   startDate?: string;
   endDate?: string;
 };
-
+interface FormData {
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  status: "active" | "inactive" | "upcoming";
+  startDate: string;
+  endDate: string;
+}
 // Mock data - replace with actual API call
-const mockCategory = {
-  id: "1",
-  name: "Best Male Artist",
-  slug: "best-male",
-  description: "Vote for your favorite male artist of the year",
-  icon: "👨‍🎤",
-  status: "active",
-  startDate: "2024-01-01",
-  endDate: "2024-12-31",
-};
+// const mockCategory = {
+//   id: "1",
+//   name: "Best Male Artist",
+//   slug: "best-male",
+//   description: "Vote for your favorite male artist of the year",
+//   icon: "👨‍🎤",
+//   status: "active",
+//   startDate: "2024-01-01",
+//   endDate: "2024-12-31",
+// };
 
 export default function EditCategory() {
+  const { getCategory, updateCategory } = useCategories();
   const { categoryId } = useParams<{ categoryId: string }>();
   const [alert, setAlert] = useState<{
     variant: "success" | "error" | "warning" | "info";
     title: string;
     message: string;
   } | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     slug: "",
     description: "",
@@ -63,22 +73,26 @@ export default function EditCategory() {
   // Fetch category data
   useEffect(() => {
     const fetchCategory = async () => {
+      if (!categoryId) {
+        setAlert({
+          variant: "error",
+          title: "Invalid Category",
+          message: "No category ID provided.",
+        });
+        setIsLoadingData(false);
+        return;
+      }
       try {
-        // TODO: Replace with actual API call
-        // const category = await getCategory(categoryId);
+        const category = await getCategory(categoryId);
 
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Use mock data
         setFormData({
-          name: mockCategory.name,
-          slug: mockCategory.slug,
-          description: mockCategory.description,
-          icon: mockCategory.icon,
-          status: mockCategory.status,
-          startDate: mockCategory.startDate,
-          endDate: mockCategory.endDate,
+          name: category.name || "",
+          slug: category.slug || "",
+          description: category.description || "",
+          icon: category.icon || "",
+          status: category.is_active ? "active" : "inactive",
+          startDate: category.startDate || "",
+          endDate: category.endDate || "",
         });
       } catch (error) {
         setAlert({
@@ -145,6 +159,15 @@ export default function EditCategory() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!categoryId) {
+      setAlert({
+        variant: "error",
+        title: "Invalid Category",
+        message: "No category ID provided.",
+      });
+      return;
+    }
+
     setTouched({
       name: true,
       slug: true,
@@ -165,11 +188,12 @@ export default function EditCategory() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
-      // await updateCategory(categoryId, formData);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Map form data to API request format
+      await updateCategory(categoryId, {
+        name: formData.name,
+        description: formData.description,
+        // still need to update for more data
+      });
 
       setAlert({
         variant: "success",

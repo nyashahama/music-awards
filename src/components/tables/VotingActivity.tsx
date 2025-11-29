@@ -250,6 +250,51 @@ export default function VotingActivity() {
   //   closeFlagModal();
   // };
 
+  const handleExportData = () => {
+    const csvContent = [
+      [
+        "Vote ID",
+        "Voter ID",
+        "Voter First Name",
+        "Voter Last Name",
+        "Voter Email",
+        "Nominee ID",
+        "Nominee Name",
+        "Category ID",
+        "Category Name",
+        "Vote Type",
+        "IP Address",
+        "Location",
+        "Voted At",
+      ],
+      ...filteredActivity.map((activity) => [
+        activity.vote_id,
+        activity.voter?.userId || "N/A",
+        activity.voter?.firstName || "N/A",
+        activity.voter?.lastName || "N/A",
+        activity.voter?.email || "N/A",
+        activity.nominee.nominee_id,
+        activity.nominee.name,
+        activity.category.category_id,
+        activity.category.name,
+        activity.vote_type,
+        activity.ipAddress || "N/A",
+        activity.location || "N/A",
+        activity.votedAt || "N/A",
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `voting-activity-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <PageMeta
@@ -355,7 +400,10 @@ export default function VotingActivity() {
                 </select>
               </div>
               <div className="flex items-end">
-                <button className="w-full px-4 py-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 transition-colors">
+                <button
+                  onClick={handleExportData}
+                  className="w-full px-4 py-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 transition-colors"
+                >
                   Export Report
                 </button>
               </div>

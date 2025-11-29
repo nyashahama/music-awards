@@ -192,7 +192,10 @@ export default function EditCategory() {
       await updateCategory(categoryId, {
         name: formData.name,
         description: formData.description,
-        // still need to update for more data
+        slug: formData.slug,
+        icon: formData.icon,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
       });
 
       setAlert({

@@ -14,6 +14,7 @@ export interface Category {
   votesCount?: number;
   startDate?: string;
   endDate?: string;
+  status?: string;
 }
 
 export interface CreateCategoryRequest {
@@ -24,6 +25,11 @@ export interface CreateCategoryRequest {
 export interface UpdateCategoryRequest {
   name?: string;
   description?: string;
+  slug?: string;
+  icon?: string;
+  is_active?: boolean;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface CategoryResponse {

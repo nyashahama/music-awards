@@ -8,6 +8,20 @@ export interface Vote {
   vote_type: "free" | "paid";
   created_at: string;
   updated_at: string;
+  voter?: {
+    userId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  nominee?: {
+    artistName: string;
+    stageName: string;
+  };
+  category?: string;
+  votedAt?: string;
+  ipAddress?: string;
+  location?: string;
 }
 
 export interface CastVoteRequest {
@@ -20,7 +34,7 @@ export interface ChangeVoteRequest {
   nominee_id: string;
 }
 
-export interface VoteResponse {
+export interface VoteResponse extends Vote {
   vote_id: string;
   user_id: string;
   category_id: string;

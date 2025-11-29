@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
@@ -13,130 +13,132 @@ import Badge from "../../components/ui/badge/Badge";
 import { Modal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
 import Button from "../../components/ui/button/Button";
+import { UserVoteResponse } from "../../api/services";
+import { useVotes } from "../../hooks";
 
-interface VotingActivity {
-  voteId: string;
-  voter: {
-    userId: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  nominee: {
-    artistName: string;
-    stageName: string;
-  };
-  category: string;
-  votedAt: string;
-  ipAddress: string;
-  location: string;
-}
+// interface VotingActivity {
+//   voteId: string;
+//   voter: {
+//     userId: string;
+//     firstName: string;
+//     lastName: string;
+//     email: string;
+//   };
+//   nominee: {
+//     artistName: string;
+//     stageName: string;
+//   };
+//   category: string;
+//   votedAt: string;
+//   ipAddress: string;
+//   location: string;
+// }
 
 // Mock data - replace with actual API call
-const votingActivityData: VotingActivity[] = [
-  {
-    voteId: "1",
-    voter: {
-      userId: "1",
-      firstName: "Tendai",
-      lastName: "Moyo",
-      email: "tendai.moyo@example.com",
-    },
-    nominee: {
-      artistName: "Desmond Chideme",
-      stageName: "Stunner",
-    },
-    category: "Best Male Artist",
-    votedAt: "2024-01-20T14:30:00Z",
-    ipAddress: "41.79.xxx.xxx",
-    location: "Harare",
-  },
-  {
-    voteId: "2",
-    voter: {
-      userId: "2",
-      firstName: "Rudo",
-      lastName: "Chikwanha",
-      email: "rudo.chikwanha@example.com",
-    },
-    nominee: {
-      artistName: "Tammy Moyo",
-      stageName: "Tammy",
-    },
-    category: "Best Female Artist",
-    votedAt: "2024-01-20T13:15:00Z",
-    ipAddress: "41.79.xxx.xxx",
-    location: "Bulawayo",
-  },
-  {
-    voteId: "3",
-    voter: {
-      userId: "3",
-      firstName: "Takudzwa",
-      lastName: "Nyathi",
-      email: "takudzwa.nyathi@example.com",
-    },
-    nominee: {
-      artistName: "Garikai Machembere",
-      stageName: "Winky D",
-    },
-    category: "Song of the Year",
-    votedAt: "2024-01-20T12:45:00Z",
-    ipAddress: "41.79.xxx.xxx",
-    location: "Mutare",
-  },
-  {
-    voteId: "4",
-    voter: {
-      userId: "1",
-      firstName: "Tendai",
-      lastName: "Moyo",
-      email: "tendai.moyo@example.com",
-    },
-    nominee: {
-      artistName: "Rodney Tafadzwa Munyika",
-      stageName: "Seh Calaz",
-    },
-    category: "Best Male Artist",
-    votedAt: "2024-01-20T11:20:00Z",
-    ipAddress: "41.79.xxx.xxx",
-    location: "Harare",
-  },
-  {
-    voteId: "5",
-    voter: {
-      userId: "5",
-      firstName: "Panashe",
-      lastName: "Gumbo",
-      email: "panashe.gumbo@example.com",
-    },
-    nominee: {
-      artistName: "Talent Mapeza",
-      stageName: "Young Talent",
-    },
-    category: "Best Newcomer",
-    votedAt: "2024-01-20T10:30:00Z",
-    ipAddress: "41.79.xxx.xxx",
-    location: "Harare",
-  },
-  {
-    voteId: "6",
-    voter: {
-      userId: "6",
-      firstName: "Kudzai",
-      lastName: "Madziva",
-      email: "kudzai.madziva@example.com",
-    },
-    nominee: {
-      artistName: "Stunner ft. Enzo Ishall",
-      stageName: "Stunner & Enzo",
-    },
-    category: "Best Collaboration",
-    votedAt: "2024-01-20T09:15:00Z",
-    ipAddress: "41.79.xxx.xxx",
-    location: "Masvingo",
-  },
-];
+// const votingActivityData: VotingActivity[] = [
+//   {
+//     voteId: "1",
+//     voter: {
+//       userId: "1",
+//       firstName: "Tendai",
+//       lastName: "Moyo",
+//       email: "tendai.moyo@example.com",
+//     },
+//     nominee: {
+//       artistName: "Desmond Chideme",
+//       stageName: "Stunner",
+//     },
+//     category: "Best Male Artist",
+//     votedAt: "2024-01-20T14:30:00Z",
+//     ipAddress: "41.79.xxx.xxx",
+//     location: "Harare",
+//   },
+//   {
+//     voteId: "2",
+//     voter: {
+//       userId: "2",
+//       firstName: "Rudo",
+//       lastName: "Chikwanha",
+//       email: "rudo.chikwanha@example.com",
+//     },
+//     nominee: {
+//       artistName: "Tammy Moyo",
+//       stageName: "Tammy",
+//     },
+//     category: "Best Female Artist",
+//     votedAt: "2024-01-20T13:15:00Z",
+//     ipAddress: "41.79.xxx.xxx",
+//     location: "Bulawayo",
+//   },
+//   {
+//     voteId: "3",
+//     voter: {
+//       userId: "3",
+//       firstName: "Takudzwa",
+//       lastName: "Nyathi",
+//       email: "takudzwa.nyathi@example.com",
+//     },
+//     nominee: {
+//       artistName: "Garikai Machembere",
+//       stageName: "Winky D",
+//     },
+//     category: "Song of the Year",
+//     votedAt: "2024-01-20T12:45:00Z",
+//     ipAddress: "41.79.xxx.xxx",
+//     location: "Mutare",
+//   },
+//   {
+//     voteId: "4",
+//     voter: {
+//       userId: "1",
+//       firstName: "Tendai",
+//       lastName: "Moyo",
+//       email: "tendai.moyo@example.com",
+//     },
+//     nominee: {
+//       artistName: "Rodney Tafadzwa Munyika",
+//       stageName: "Seh Calaz",
+//     },
+//     category: "Best Male Artist",
+//     votedAt: "2024-01-20T11:20:00Z",
+//     ipAddress: "41.79.xxx.xxx",
+//     location: "Harare",
+//   },
+//   {
+//     voteId: "5",
+//     voter: {
+//       userId: "5",
+//       firstName: "Panashe",
+//       lastName: "Gumbo",
+//       email: "panashe.gumbo@example.com",
+//     },
+//     nominee: {
+//       artistName: "Talent Mapeza",
+//       stageName: "Young Talent",
+//     },
+//     category: "Best Newcomer",
+//     votedAt: "2024-01-20T10:30:00Z",
+//     ipAddress: "41.79.xxx.xxx",
+//     location: "Harare",
+//   },
+//   {
+//     voteId: "6",
+//     voter: {
+//       userId: "6",
+//       firstName: "Kudzai",
+//       lastName: "Madziva",
+//       email: "kudzai.madziva@example.com",
+//     },
+//     nominee: {
+//       artistName: "Stunner ft. Enzo Ishall",
+//       stageName: "Stunner & Enzo",
+//     },
+//     category: "Best Collaboration",
+//     votedAt: "2024-01-20T09:15:00Z",
+//     ipAddress: "41.79.xxx.xxx",
+//     location: "Masvingo",
+//   },
+// ];
 
 export default function VotingActivity() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -144,8 +146,10 @@ export default function VotingActivity() {
   const [locationFilter, setLocationFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [selectedActivity, setSelectedActivity] =
-    useState<VotingActivity | null>(null);
+    useState<UserVoteResponse | null>(null);
   const [flagReason, setFlagReason] = useState("");
+
+  const { votes, getAllVotes } = useVotes();
 
   const {
     isOpen: isDetailsOpen,
@@ -158,34 +162,36 @@ export default function VotingActivity() {
   //   closeModal: closeFlagModal,
   // } = useModal();
 
+  useEffect(() => {
+    getAllVotes();
+  }, []);
+
   const categories = [
-    ...new Set(votingActivityData.map((activity) => activity.category)),
+    ...new Set(votes.votes.map((activity) => activity.category)),
   ];
 
   const locations = [
-    ...new Set(votingActivityData.map((activity) => activity.location)),
+    ...new Set(votes.votes.map((activity) => activity.location)),
   ];
 
-  const filteredActivity = votingActivityData.filter((activity) => {
+  const filteredActivity = votes.votes.filter((activity) => {
     const matchesSearch =
-      activity.voter.firstName
+      activity.voter?.firstName
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      activity.voter.lastName
+      activity.voter?.lastName
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      activity.nominee.stageName
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      activity.nominee.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
-      categoryFilter === "all" || activity.category === categoryFilter;
+      categoryFilter === "all" || activity.category.name === categoryFilter;
     const matchesLocation =
       locationFilter === "all" || activity.location === locationFilter;
 
     // Date filter logic
     let matchesDate = true;
     if (dateFilter !== "all") {
-      const voteDate = new Date(activity.votedAt);
+      const voteDate = new Date(activity.votedAt || "");
       const now = new Date();
       const daysDiff = Math.floor(
         (now.getTime() - voteDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -222,12 +228,12 @@ export default function VotingActivity() {
     return `${diffDays}d ago`;
   };
 
-  const handleDetailsClick = (activity: VotingActivity) => {
+  const handleDetailsClick = (activity: UserVoteResponse) => {
     setSelectedActivity(activity);
     openDetailsModal();
   };
 
-  const handleFlagClick = (activity: VotingActivity) => {
+  const handleFlagClick = (activity: UserVoteResponse) => {
     setSelectedActivity(activity);
     setFlagReason("");
     console.log(flagReason);
@@ -257,14 +263,12 @@ export default function VotingActivity() {
           {/* Summary Stats */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white">
-              <div className="text-2xl font-bold">
-                {votingActivityData.length}
-              </div>
+              <div className="text-2xl font-bold">{votes.votes.length}</div>
               <div className="text-sm opacity-90">Total Votes Cast</div>
             </div>
             <div className="p-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg text-white">
               <div className="text-2xl font-bold">
-                {new Set(votingActivityData.map((v) => v.voter.userId)).size}
+                {new Set(votes.votes.map((v) => v.voter?.userId)).size}
               </div>
               <div className="text-sm opacity-90">Unique Voters</div>
             </div>
@@ -275,8 +279,8 @@ export default function VotingActivity() {
             <div className="p-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg text-white">
               <div className="text-2xl font-bold">
                 {
-                  votingActivityData.filter((v) => {
-                    const voteDate = new Date(v.votedAt);
+                  votes.votes.filter((v) => {
+                    const voteDate = new Date(v.votedAt || "");
                     const today = new Date();
                     return voteDate.toDateString() === today.toDateString();
                   }).length
@@ -312,8 +316,8 @@ export default function VotingActivity() {
                 >
                   <option value="all">All Categories</option>
                   {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
+                    <option key={category.category_id} value={category.name}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -412,22 +416,22 @@ export default function VotingActivity() {
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {filteredActivity.map((activity) => (
                     <TableRow
-                      key={activity.voteId}
+                      key={activity.vote_id}
                       className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
                     >
                       <TableCell className="px-5 py-4 text-start">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                            {activity.voter.firstName.charAt(0)}
-                            {activity.voter.lastName.charAt(0)}
+                            {activity.voter?.firstName.charAt(0)}
+                            {activity.voter?.lastName.charAt(0)}
                           </div>
                           <div>
                             <span className="block font-semibold text-gray-800 text-theme-sm dark:text-white/90">
-                              {activity.voter.firstName}{" "}
-                              {activity.voter.lastName}
+                              {activity.voter?.firstName}{" "}
+                              {activity.voter?.lastName}
                             </span>
                             <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                              {activity.voter.email}
+                              {activity.voter?.email}
                             </span>
                           </div>
                         </div>
@@ -435,16 +439,16 @@ export default function VotingActivity() {
                       <TableCell className="px-4 py-3 text-start">
                         <div>
                           <span className="block font-semibold text-gray-800 text-theme-sm dark:text-white/90">
-                            {activity.nominee.stageName}
+                            {activity.nominee.name}
                           </span>
                           <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                            {activity.nominee.artistName}
+                            {activity.nominee.name}
                           </span>
                         </div>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-start">
                         <Badge size="sm" color="default">
-                          {activity.category}
+                          {activity.category.name}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
@@ -456,10 +460,10 @@ export default function VotingActivity() {
                       <TableCell className="px-4 py-3 text-start">
                         <div>
                           <span className="block text-gray-800 text-theme-sm dark:text-white/90">
-                            {formatDateTime(activity.votedAt)}
+                            {formatDateTime(activity.votedAt || "")}
                           </span>
                           <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                            {getTimeAgo(activity.votedAt)}
+                            {getTimeAgo(activity.votedAt || "")}
                           </span>
                         </div>
                       </TableCell>
@@ -489,8 +493,8 @@ export default function VotingActivity() {
             <div className="px-6 py-4 border-t border-gray-200 dark:border-white/[0.05]">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">
-                  Showing {filteredActivity.length} of{" "}
-                  {votingActivityData.length} votes
+                  Showing {filteredActivity.length} of {votes.votes.length}{" "}
+                  votes
                 </span>
                 <div className="flex gap-2">
                   <button className="px-3 py-1 text-gray-700 transition-colors border border-gray-200 rounded-lg dark:text-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/[0.05]">
@@ -532,7 +536,7 @@ export default function VotingActivity() {
                       Vote ID
                     </p>
                     <p className="text-lg font-semibold text-gray-800 dark:text-white/90">
-                      #{selectedActivity.voteId}
+                      #{selectedActivity.vote_id}
                     </p>
                   </div>
                   <Badge size="sm" color="success">
@@ -548,19 +552,19 @@ export default function VotingActivity() {
                 </h5>
                 <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold text-xl">
-                    {selectedActivity.voter.firstName.charAt(0)}
-                    {selectedActivity.voter.lastName.charAt(0)}
+                    {selectedActivity.voter?.firstName.charAt(0)}
+                    {selectedActivity.voter?.lastName.charAt(0)}
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-800 dark:text-white/90">
-                      {selectedActivity.voter.firstName}{" "}
-                      {selectedActivity.voter.lastName}
+                      {selectedActivity.voter?.firstName}{" "}
+                      {selectedActivity.voter?.lastName}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {selectedActivity.voter.email}
+                      {selectedActivity.voter?.email}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      User ID: {selectedActivity.voter.userId}
+                      User ID: {selectedActivity.voter?.userId}
                     </p>
                   </div>
                 </div>
@@ -574,18 +578,18 @@ export default function VotingActivity() {
                 <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-semibold text-xl">
-                      {selectedActivity.nominee.stageName.charAt(0)}
+                      {selectedActivity.nominee?.name.charAt(0)}
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-gray-800 dark:text-white/90 text-lg">
-                        {selectedActivity.nominee.stageName}
+                        {selectedActivity.nominee?.name}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {selectedActivity.nominee.artistName}
+                        {selectedActivity.nominee?.name}
                       </p>
                       <div className="mt-2">
                         <Badge size="sm" color="default">
-                          {selectedActivity.category}
+                          {selectedActivity.category.name}
                         </Badge>
                       </div>
                     </div>
@@ -604,10 +608,10 @@ export default function VotingActivity() {
                       Timestamp
                     </p>
                     <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                      {formatDateTime(selectedActivity.votedAt)}
+                      {formatDateTime(selectedActivity.votedAt || "")}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      ({getTimeAgo(selectedActivity.votedAt)})
+                      ({getTimeAgo(selectedActivity.votedAt || "")})
                     </p>
                   </div>
 
@@ -634,7 +638,7 @@ export default function VotingActivity() {
                       Category
                     </p>
                     <Badge size="sm" color="default">
-                      {selectedActivity.category}
+                      {selectedActivity.category.name}
                     </Badge>
                   </div>
                 </div>

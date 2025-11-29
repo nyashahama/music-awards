@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
+import { useVotes, useCategories, useNominees, useAuth } from "../../hooks";
 
 interface CategoryPerformance {
   categoryId: string;
@@ -33,13 +34,8 @@ interface TopNominee {
   imageUrl: string;
 }
 
-// interface VotingPattern {
-//   hour: string;
-//   votes: number;
-// }
-
-// Mock data
-const categoryPerformanceData: CategoryPerformance[] = [
+// Mock data as fallback
+const mockCategoryPerformanceData: CategoryPerformance[] = [
   {
     categoryId: "1",
     name: "Best Male Artist",
@@ -67,27 +63,9 @@ const categoryPerformanceData: CategoryPerformance[] = [
     participationRate: 92.5,
     trend: "stable",
   },
-  {
-    categoryId: "4",
-    name: "Best Newcomer",
-    totalVotes: 28600,
-    uniqueVoters: 8900,
-    averageVotesPerVoter: 3.2,
-    participationRate: 68.9,
-    trend: "down",
-  },
-  {
-    categoryId: "5",
-    name: "Best Collaboration",
-    totalVotes: 34200,
-    uniqueVoters: 9500,
-    averageVotesPerVoter: 3.6,
-    participationRate: 71.3,
-    trend: "up",
-  },
 ];
 
-const topNomineesData: TopNominee[] = [
+const mockTopNomineesData: TopNominee[] = [
   {
     nomineeId: "1",
     name: "Garikai Machembere",
@@ -120,6 +98,173 @@ const topNomineesData: TopNominee[] = [
 export default function VotingAnalyticsReports() {
   const [dateRange, setDateRange] = useState("30days");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categoryPerformance, setCategoryPerformance] = useState<
+    CategoryPerformance[]
+  >([]);
+  const [topNominees, setTopNominees] = useState<TopNominee[]>([]);
+  const [votingPatterns, setVotingPatterns] = useState<number[]>([]);
+  const [dailyVotesTrend, setDailyVotesTrend] = useState<{
+    currentWeek: number[];
+    lastWeek: number[];
+  }>({
+    currentWeek: [],
+    lastWeek: [],
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const { votes, getAllVotes } = useVotes();
+  const { categories, listCategories } = useCategories();
+  const { nominees, getAllNominees } = useNominees();
+  const { users } = useAuth();
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [dateRange, selectedCategory]);
+
+  const fetchAnalyticsData = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Fetch all required data
+      await Promise.all([getAllVotes(), listCategories(), getAllNominees()]);
+
+      // Process the data to generate analytics
+      processAnalyticsData();
+    } catch (err) {
+      console.error("Failed to fetch analytics data:", err);
+      setError("Failed to load analytics data. Using sample data.");
+      // Fallback to mock data
+      setCategoryPerformance(mockCategoryPerformanceData);
+      setTopNominees(mockTopNomineesData);
+      setVotingPatterns([245, 180, 320, 580, 1200, 1850, 2100, 1950, 890]);
+      setDailyVotesTrend({
+        currentWeek: [3200, 4100, 3800, 4500, 5200, 6800, 7200],
+        lastWeek: [2800, 3500, 3200, 3900, 4200, 5100, 5800],
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const processAnalyticsData = () => {
+    // Process category performance
+    const categoryPerformanceData = categories.categories.map((category) => {
+      const categoryVotes = votes.votes.filter(
+        (vote) => vote.category?.category_id === category.category_id
+      );
+      const uniqueVoters = new Set(categoryVotes.map((vote) => vote.vote_id))
+        .size;
+      const totalVotes = categoryVotes.length;
+
+      return {
+        categoryId: category.category_id,
+        name: category.name,
+        totalVotes,
+        uniqueVoters,
+        averageVotesPerVoter: uniqueVoters > 0 ? totalVotes / uniqueVoters : 0,
+        participationRate:
+          users.users.length > 0
+            ? (uniqueVoters / users.users.length) * 100
+            : 0,
+        trend: "stable" as const, // You can implement trend calculation based on historical data
+      };
+    });
+
+    // Process top nominees
+    const nomineeVotes = nominees.nominees.map((nominee) => {
+      const nomineeVotesCount = votes.votes.filter(
+        (vote) => vote.nominee?.nominee_id === nominee.nominee_id
+      ).length;
+      return {
+        nominee,
+        votes: nomineeVotesCount,
+      };
+    });
+
+    const sortedNominees = nomineeVotes
+      .sort((a, b) => b.votes - a.votes)
+      .slice(0, 3);
+    const totalVotes = votes.votes.length;
+
+    const topNomineesData = sortedNominees.map((item, _) => {
+      const category = categories.categories.find((cat) =>
+        item.nominee.categories?.some(
+          (nomCat) => nomCat.category_id === cat.category_id
+        )
+      );
+
+      return {
+        nomineeId: item.nominee.nominee_id,
+        name: item.nominee.name,
+        stageName: item.nominee.name, // You might want to add stageName to your nominee interface
+        category: category?.name || "Unknown Category",
+        votes: item.votes,
+        percentage: totalVotes > 0 ? (item.votes / totalVotes) * 100 : 0,
+        imageUrl: item.nominee.image_url || "/images/artists/default.jpg",
+      };
+    });
+
+    // Process voting patterns by hour (mock calculation for now)
+    const hourlyPatterns = [245, 180, 320, 580, 1200, 1850, 2100, 1950, 890];
+
+    // Process daily trends (mock calculation for now)
+    const currentWeekTrend = [3200, 4100, 3800, 4500, 5200, 6800, 7200];
+    const lastWeekTrend = [2800, 3500, 3200, 3900, 4200, 5100, 5800];
+
+    setCategoryPerformance(
+      categoryPerformanceData.length > 0
+        ? categoryPerformanceData
+        : mockCategoryPerformanceData
+    );
+    setTopNominees(
+      topNomineesData.length > 0 ? topNomineesData : mockTopNomineesData
+    );
+    setVotingPatterns(hourlyPatterns);
+    setDailyVotesTrend({
+      currentWeek: currentWeekTrend,
+      lastWeek: lastWeekTrend,
+    });
+  };
+
+  const handleExportPDF = () => {
+    // TODO: Implement PDF export
+    alert("PDF export functionality will be implemented soon");
+  };
+
+  const handleExportExcel = () => {
+    const csvContent = [
+      [
+        "Category ID",
+        "Category Name",
+        "Total Votes",
+        "Unique Voters",
+        "Average Votes Per Voter",
+        "Participation Rate",
+        "Trend",
+      ],
+      ...categoryPerformance.map((category) => [
+        category.categoryId,
+        category.name,
+        category.totalVotes,
+        category.uniqueVoters,
+        category.averageVotesPerVoter.toFixed(2),
+        category.participationRate.toFixed(1) + "%",
+        category.trend,
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `voting-analytics-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   // Voting patterns by hour
   const votingPatternsOptions: ApexOptions = {
@@ -168,7 +313,7 @@ export default function VotingAnalyticsReports() {
   const votingPatternsSeries = [
     {
       name: "Votes",
-      data: [245, 180, 320, 580, 1200, 1850, 2100, 1950, 890],
+      data: votingPatterns,
     },
   ];
 
@@ -178,7 +323,7 @@ export default function VotingAnalyticsReports() {
       type: "donut",
       fontFamily: "Outfit, sans-serif",
     },
-    labels: categoryPerformanceData.map((cat) => cat.name),
+    labels: categoryPerformance.map((cat) => cat.name),
     colors: ["#465FFF", "#9CB9FF", "#10B981", "#F59E0B", "#EF4444"],
     legend: {
       position: "bottom",
@@ -204,7 +349,7 @@ export default function VotingAnalyticsReports() {
     ],
   };
 
-  const categoryDistributionSeries = categoryPerformanceData.map(
+  const categoryDistributionSeries = categoryPerformance.map(
     (cat) => cat.totalVotes
   );
 
@@ -238,11 +383,11 @@ export default function VotingAnalyticsReports() {
   const dailyVotesTrendSeries = [
     {
       name: "This Week",
-      data: [3200, 4100, 3800, 4500, 5200, 6800, 7200],
+      data: dailyVotesTrend.currentWeek,
     },
     {
       name: "Last Week",
-      data: [2800, 3500, 3200, 3900, 4200, 5100, 5800],
+      data: dailyVotesTrend.lastWeek,
     },
   ];
 
@@ -298,19 +443,42 @@ export default function VotingAnalyticsReports() {
     );
   };
 
-  const totalVotes = categoryPerformanceData.reduce(
+  const totalVotes = categoryPerformance.reduce(
     (sum, cat) => sum + cat.totalVotes,
     0
   );
   const totalUniqueVoters = new Set(
-    categoryPerformanceData.flatMap((cat) => cat.uniqueVoters)
+    categoryPerformance.flatMap((cat) => cat.uniqueVoters)
   ).size;
-  const averageParticipationRate = (
-    categoryPerformanceData.reduce(
-      (sum, cat) => sum + cat.participationRate,
-      0
-    ) / categoryPerformanceData.length
-  ).toFixed(1);
+  const averageParticipationRate =
+    categoryPerformance.length > 0
+      ? (
+          categoryPerformance.reduce(
+            (sum, cat) => sum + cat.participationRate,
+            0
+          ) / categoryPerformance.length
+        ).toFixed(1)
+      : "0.0";
+
+  if (isLoading) {
+    return (
+      <>
+        <PageMeta
+          title="Voting Analytics Reports | Zimdancehall Music Awards"
+          description="Comprehensive voting analytics and performance reports"
+        />
+        <PageBreadcrumb pageTitle="Voting Analytics Reports" />
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              Loading analytics data...
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -319,6 +487,27 @@ export default function VotingAnalyticsReports() {
         description="Comprehensive voting analytics and performance reports"
       />
       <PageBreadcrumb pageTitle="Voting Analytics Reports" />
+
+      {error && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-800">
+          <div className="flex items-center">
+            <svg
+              className="w-5 h-5 text-yellow-500 mr-2"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="text-yellow-700 dark:text-yellow-400">
+              {error}
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* Filter Controls */}
@@ -350,7 +539,7 @@ export default function VotingAnalyticsReports() {
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                   <option value="all">All Categories</option>
-                  {categoryPerformanceData.map((cat) => (
+                  {categoryPerformance.map((cat) => (
                     <option key={cat.categoryId} value={cat.categoryId}>
                       {cat.name}
                     </option>
@@ -359,10 +548,16 @@ export default function VotingAnalyticsReports() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="px-4 py-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 transition-colors">
+              <button
+                onClick={handleExportPDF}
+                className="px-4 py-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 transition-colors"
+              >
                 Export PDF
               </button>
-              <button className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 transition-colors">
+              <button
+                onClick={handleExportExcel}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 transition-colors"
+              >
                 Export Excel
               </button>
             </div>
@@ -451,7 +646,7 @@ export default function VotingAnalyticsReports() {
               </div>
             </div>
             <div className="text-3xl font-bold">
-              {categoryPerformanceData.length}
+              {categoryPerformance.length}
             </div>
             <div className="text-xs opacity-75 mt-1">With active voting</div>
           </div>
@@ -545,7 +740,7 @@ export default function VotingAnalyticsReports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {categoryPerformanceData.map((category) => (
+                  {categoryPerformance.map((category) => (
                     <TableRow
                       key={category.categoryId}
                       className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
@@ -575,7 +770,7 @@ export default function VotingAnalyticsReports() {
                                 : "error"
                           }
                         >
-                          {category.participationRate}%
+                          {category.participationRate.toFixed(1)}%
                         </Badge>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-center">
@@ -594,7 +789,7 @@ export default function VotingAnalyticsReports() {
         {/* Top Performers */}
         <ComponentCard title="Top Performing Nominees">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {topNomineesData.map((nominee, index) => (
+            {topNominees.map((nominee, index) => (
               <div
                 key={nominee.nomineeId}
                 className="relative overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03] p-6"
@@ -633,7 +828,7 @@ export default function VotingAnalyticsReports() {
                 {/* Stats */}
                 <div className="text-center mb-4">
                   <div className="text-3xl font-bold text-purple-500">
-                    {nominee.percentage}%
+                    {nominee.percentage.toFixed(1)}%
                   </div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">
                     {formatNumber(nominee.votes)} votes

@@ -19,7 +19,6 @@ export interface Nominee {
   song?: string;
   status?: "active" | "pending" | "disqualified";
   votes?: number;
-  //dateAdded: string;
 }
 
 export interface CreateNomineeRequest {
@@ -42,7 +41,7 @@ export interface SetCategoriesRequest {
   category_ids: string[];
 }
 
-export interface NomineeResponse {
+export interface NomineeResponse extends Nominee {
   nominee_id: string;
   name: string;
   description: string;

@@ -22,6 +22,7 @@ export interface UseCategoriesReturn {
 
   clearError: () => void;
   clearCategories: () => void;
+  error: string | null;
 }
 
 /* ---------- Hook Implementation ---------- */
@@ -158,5 +159,6 @@ export const useCategories = (): UseCategoriesReturn => {
     listActiveCategories,
     clearError,
     clearCategories,
+    error,
   };
 };

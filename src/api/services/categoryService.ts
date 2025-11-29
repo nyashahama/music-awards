@@ -33,6 +33,13 @@ export interface CategoryResponse {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Include optional extended fields
+  slug?: string;
+  icon?: string;
+  nomineesCount?: number;
+  votesCount?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 class CategoryService {

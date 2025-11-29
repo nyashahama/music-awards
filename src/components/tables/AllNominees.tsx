@@ -166,7 +166,7 @@ export default function AllNominees() {
 
   useEffect(() => {
     getAllNominees();
-  }, [nominees]);
+  }, []);
 
   const handleEditClick = (nominee: Nominee) => {
     setEditFormData({ ...nominee });
@@ -226,7 +226,7 @@ export default function AllNominees() {
     setIsUpdating(true);
     try {
       const updateData: UpdateNomineeRequest = {
-        name: editFormData.artist?.name,
+        name: editFormData.name,
         description: editFormData.description,
         sample_works: editFormData.sample_works,
         image_url: editFormData.image_url,
@@ -243,13 +243,22 @@ export default function AllNominees() {
       closeEditModal();
     } catch (error) {
       setAlert({
-        variant: "success",
-        title: "Nominee update failde",
+        variant: "error",
+        title: "Nominee update failed",
         message: `${editFormData.name} has been failed to update.`,
       });
 
       setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setIsUpdating(false);
     }
+  };
+
+  const getNomineeName = (nominee: Nominee) =>
+    nominee.artist?.stageName || nominee.name || "N/A";
+
+  const getNomineeImage = (nominee: Nominee) => {
+    return nominee.artist?.image || nominee.image_url || "";
   };
 
   return (
@@ -406,14 +415,14 @@ export default function AllNominees() {
                             <img
                               width={40}
                               height={40}
-                              src={nominee.artist?.image}
-                              alt={nominee.artist?.stageName}
+                              src={getNomineeImage(nominee)}
+                              alt={getNomineeName(nominee)}
                               className="object-cover"
                             />
                           </div>
                           <div>
                             <span className="block font-semibold text-gray-800 text-theme-sm dark:text-white/90">
-                              {nominee.artist?.stageName}
+                              {getNomineeName(nominee)}
                             </span>
                             <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
                               {nominee.artist?.name}
@@ -639,7 +648,7 @@ export default function AllNominees() {
                   Cancel
                 </Button>
                 <Button size="sm" type="submit">
-                  {isUpdating ? "Edit..." : "Save Cahnges"}
+                  {isUpdating ? "Updating..." : "Save Changes"}
                 </Button>
               </div>
             </form>

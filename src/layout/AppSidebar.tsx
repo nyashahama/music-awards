@@ -40,6 +40,7 @@ const navItems: NavItem[] = [
         pro: false,
         new: true,
       },
+      { name: "View Categories", path: "categories", pro: false },
       { name: "Add Category", path: "/categories/add", pro: false },
       { name: "Best Male Artist", path: "/best-male", pro: false },
       { name: "Best Female Artist", path: "/best-female", pro: false },

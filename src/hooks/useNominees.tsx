@@ -6,10 +6,11 @@ import {
   NomineeResponse,
   CategoryBrief,
   NomineeBrief,
+  Nominee,
 } from "../api/services/nomineeService";
 
 interface NomineesState {
-  nominees: NomineeResponse[];
+  nominees: Nominee[];
   isLoading: boolean;
 }
 

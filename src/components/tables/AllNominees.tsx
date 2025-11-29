@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
@@ -15,95 +15,110 @@ import { useModal } from "../../hooks/useModal";
 import Button from "../../components/ui/button/Button";
 import Input from "../../components/form/input/InputField";
 import Label from "../../components/form/Label";
+import { Nominee, UpdateNomineeRequest } from "../../api/services";
+import { Link } from "react-router";
+import { useNominees } from "../../hooks";
+import Alert from "../ui/alert/Alert";
 
-interface Nominee {
-  id: number;
-  artist: {
-    image: string;
-    name: string;
-    stageName: string;
-  };
-  category: string;
-  song: string;
-  status: "active" | "pending" | "disqualified";
-  votes: number;
-  dateAdded: string;
-}
+// interface Nominee {
+//   id: number;
+//   artist: {
+//     image: string;
+//     name: string;
+//     stageName: string;
+//   };
+//   category: string;
+//   song: string;
+//   status: "active" | "pending" | "disqualified";
+//   votes: number;
+//   dateAdded: string;
+// }
 
-const allNomineesData: Nominee[] = [
-  {
-    id: 1,
-    artist: {
-      image: "/images/artists/artist-01.jpg",
-      name: "Desmond Chideme",
-      stageName: "Stunner",
-    },
-    category: "Best Male Artist",
-    song: "Dzimba Remabwe",
-    status: "active",
-    votes: 12400,
-    dateAdded: "2024-01-15",
-  },
-  {
-    id: 2,
-    artist: {
-      image: "/images/artists/artist-02.jpg",
-      name: "Rodney Tafadzwa Munyika",
-      stageName: "Seh Calaz",
-    },
-    category: "Best Male Artist",
-    song: "Mabhanditi",
-    status: "active",
-    votes: 8900,
-    dateAdded: "2024-01-16",
-  },
-  {
-    id: 3,
-    artist: {
-      image: "/images/artists/female-01.jpg",
-      name: "Tammy Moyo",
-      stageName: "Tammy",
-    },
-    category: "Best Female Artist",
-    song: "Sweet Love",
-    status: "active",
-    votes: 9800,
-    dateAdded: "2024-01-14",
-  },
-  {
-    id: 4,
-    artist: {
-      image: "/images/artists/artist-05.jpg",
-      name: "Garikai Machembere",
-      stageName: "Winky D",
-    },
-    category: "Song of the Year",
-    song: "Disappear",
-    status: "active",
-    votes: 15600,
-    dateAdded: "2024-01-10",
-  },
-  {
-    id: 5,
-    artist: {
-      image: "/images/artists/newcomer-01.jpg",
-      name: "Talent Mapeza",
-      stageName: "Young Talent",
-    },
-    category: "Best Newcomer",
-    song: "First Step",
-    status: "pending",
-    votes: 4500,
-    dateAdded: "2024-01-20",
-  },
-];
+// const allNomineesData: Nominee[] = [
+//   {
+//     id: 1,
+//     artist: {
+//       image: "/images/artists/artist-01.jpg",
+//       name: "Desmond Chideme",
+//       stageName: "Stunner",
+//     },
+//     category: "Best Male Artist",
+//     song: "Dzimba Remabwe",
+//     status: "active",
+//     votes: 12400,
+//     dateAdded: "2024-01-15",
+//   },
+//   {
+//     id: 2,
+//     artist: {
+//       image: "/images/artists/artist-02.jpg",
+//       name: "Rodney Tafadzwa Munyika",
+//       stageName: "Seh Calaz",
+//     },
+//     category: "Best Male Artist",
+//     song: "Mabhanditi",
+//     status: "active",
+//     votes: 8900,
+//     dateAdded: "2024-01-16",
+//   },
+//   {
+//     id: 3,
+//     artist: {
+//       image: "/images/artists/female-01.jpg",
+//       name: "Tammy Moyo",
+//       stageName: "Tammy",
+//     },
+//     category: "Best Female Artist",
+//     song: "Sweet Love",
+//     status: "active",
+//     votes: 9800,
+//     dateAdded: "2024-01-14",
+//   },
+//   {
+//     id: 4,
+//     artist: {
+//       image: "/images/artists/artist-05.jpg",
+//       name: "Garikai Machembere",
+//       stageName: "Winky D",
+//     },
+//     category: "Song of the Year",
+//     song: "Disappear",
+//     status: "active",
+//     votes: 15600,
+//     dateAdded: "2024-01-10",
+//   },
+//   {
+//     id: 5,
+//     artist: {
+//       image: "/images/artists/newcomer-01.jpg",
+//       name: "Talent Mapeza",
+//       stageName: "Young Talent",
+//     },
+//     category: "Best Newcomer",
+//     song: "First Step",
+//     status: "pending",
+//     votes: 4500,
+//     dateAdded: "2024-01-20",
+//   },
+// ];
 
 export default function AllNominees() {
+  const { nominees, getAllNominees, deleteNominee, updateNominee } =
+    useNominees();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [nomineeToDelete, setNomineeToDelete] = useState<Nominee | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  //const [selectedNominee, setSelectedNominee] = useState<Nominee | null>(null);
+  // const [selectedNominee, setSelectedNominee] = useState<Nominee | null>(null);
   const [editFormData, setEditFormData] = useState<Nominee | null>(null);
+
+  const [alert, setAlert] = useState<{
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
 
   const {
     isOpen: isEditOpen,
@@ -112,15 +127,15 @@ export default function AllNominees() {
   } = useModal();
 
   const categories = [
-    ...new Set(allNomineesData.map((nominee) => nominee.category)),
+    ...new Set(nominees.nominees.map((nominee) => nominee.category)),
   ];
 
-  const filteredNominees = allNomineesData.filter((nominee) => {
+  const filteredNominees = nominees.nominees.filter((nominee) => {
     const matchesSearch =
-      nominee.artist.stageName
+      nominee.artist?.stageName
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      nominee.song.toLowerCase().includes(searchTerm.toLowerCase());
+      (nominee.song || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
       categoryFilter === "all" || nominee.category === categoryFilter;
     const matchesStatus =
@@ -129,14 +144,14 @@ export default function AllNominees() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const formatVotes = (votes: number) => {
-    if (votes >= 1000) {
-      return `${(votes / 1000).toFixed(1)}K`;
+  const formatVotes = (votes?: number) => {
+    if ((votes || 0) >= 1000) {
+      return `${((votes || 0) / 1000).toFixed(1)}K`;
     }
-    return votes.toString();
+    return (votes || 0).toString();
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status?: string) => {
     switch (status) {
       case "active":
         return "success";
@@ -149,6 +164,10 @@ export default function AllNominees() {
     }
   };
 
+  useEffect(() => {
+    getAllNominees();
+  }, [nominees]);
+
   const handleEditClick = (nominee: Nominee) => {
     setEditFormData({ ...nominee });
     openEditModal();
@@ -156,7 +175,14 @@ export default function AllNominees() {
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setEditFormData((prev) => (prev ? { ...prev, [name]: value } : null));
+    setEditFormData((prev: Nominee | null) =>
+      prev
+        ? {
+            ...prev,
+            [name]: value,
+          }
+        : null
+    );
   };
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -164,10 +190,66 @@ export default function AllNominees() {
     setEditFormData((prev) => (prev ? { ...prev, [name]: value } : null));
   };
 
-  const handleSaveEdit = () => {
-    // TODO: Implement actual save logic with API call
-    console.log("Saving nominee changes:", editFormData);
-    closeEditModal();
+  const handleDeleteClick = (nominee: Nominee) => {
+    setNomineeToDelete(nominee);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!nomineeToDelete) return;
+
+    try {
+      await deleteNominee(nomineeToDelete.nominee_id);
+
+      setAlert({
+        variant: "success",
+        title: "Category Deleted",
+        message: `${nomineeToDelete.name} has been successfully deleted.`,
+      });
+
+      setTimeout(() => setAlert(null), 5000);
+    } catch (error) {
+      setAlert({
+        variant: "error",
+        title: "Delete Failed",
+        message: "Failed to delete category. Please try again.",
+      });
+      setTimeout(() => setAlert(null), 5000);
+    } finally {
+      setShowDeleteModal(false);
+      setNomineeToDelete(null);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editFormData) return;
+    setIsUpdating(true);
+    try {
+      const updateData: UpdateNomineeRequest = {
+        name: editFormData.artist?.name,
+        description: editFormData.description,
+        sample_works: editFormData.sample_works,
+        image_url: editFormData.image_url,
+      };
+      await updateNominee(editFormData.nominee_id, updateData);
+      setIsUpdating(false);
+      setAlert({
+        variant: "success",
+        title: "Nominee Updated",
+        message: `${editFormData.name} has been successfully updated.`,
+      });
+
+      setTimeout(() => setAlert(null), 5000);
+      closeEditModal();
+    } catch (error) {
+      setAlert({
+        variant: "success",
+        title: "Nominee update failde",
+        message: `${editFormData.name} has been failed to update.`,
+      });
+
+      setTimeout(() => setAlert(null), 5000);
+    }
   };
 
   return (
@@ -178,8 +260,34 @@ export default function AllNominees() {
       />
       <PageBreadcrumb pageTitle="All Nominees" />
 
+      {alert && (
+        <Alert variant={alert.variant} title={alert.title}>
+          {alert.message}
+        </Alert>
+      )}
+
       <div className="space-y-6">
         <ComponentCard title="Nominees Management">
+          <div className="flex justify-end mb-4">
+            <Link to="/add-nominee">
+              <Button size="sm">
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add Nominee
+              </Button>
+            </Link>
+          </div>
           {/* Filters */}
           <div className="mb-6 p-4 bg-gray-50 rounded-lg dark:bg-gray-800">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -289,7 +397,7 @@ export default function AllNominees() {
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {filteredNominees.map((nominee) => (
                     <TableRow
-                      key={nominee.id}
+                      key={nominee.nominee_id}
                       className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
                     >
                       <TableCell className="px-5 py-4 text-start">
@@ -298,17 +406,17 @@ export default function AllNominees() {
                             <img
                               width={40}
                               height={40}
-                              src={nominee.artist.image}
-                              alt={nominee.artist.stageName}
+                              src={nominee.artist?.image}
+                              alt={nominee.artist?.stageName}
                               className="object-cover"
                             />
                           </div>
                           <div>
                             <span className="block font-semibold text-gray-800 text-theme-sm dark:text-white/90">
-                              {nominee.artist.stageName}
+                              {nominee.artist?.stageName}
                             </span>
                             <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                              {nominee.artist.name}
+                              {nominee.artist?.name}
                             </span>
                           </div>
                         </div>
@@ -321,15 +429,17 @@ export default function AllNominees() {
                       </TableCell>
                       <TableCell className="px-4 py-3 text-start">
                         <Badge size="sm" color={getStatusColor(nominee.status)}>
-                          {nominee.status.charAt(0).toUpperCase() +
-                            nominee.status.slice(1)}
+                          {(nominee.status || "active")
+                            .charAt(0)
+                            .toUpperCase() + nominee.status ||
+                            "active".slice(1)}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
                         {formatVotes(nominee.votes)}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                        {new Date(nominee.dateAdded).toLocaleDateString()}
+                        {new Date(nominee.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-center">
                         <div className="flex justify-center space-x-2">
@@ -339,7 +449,10 @@ export default function AllNominees() {
                           >
                             Edit
                           </button>
-                          <button className="px-3 py-1 text-xs font-medium text-red-600 transition-colors bg-red-100 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-200">
+                          <button
+                            onClick={() => handleDeleteClick(nominee)}
+                            className="px-3 py-1 text-xs font-medium text-red-600 transition-colors bg-red-100 rounded-lg hover:bg-red-200 dark:bg-red-900 dark:text-red-200"
+                          >
                             Remove
                           </button>
                         </div>
@@ -354,8 +467,8 @@ export default function AllNominees() {
             <div className="px-6 py-4 border-t border-gray-200 dark:border-white/[0.05]">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">
-                  Showing {filteredNominees.length} of {allNomineesData.length}{" "}
-                  nominees
+                  Showing {filteredNominees.length} of{" "}
+                  {nominees.nominees.length} nominees
                 </span>
                 <div className="flex gap-2">
                   <button className="px-3 py-1 text-gray-700 transition-colors border border-gray-200 rounded-lg dark:text-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/[0.05]">
@@ -403,17 +516,17 @@ export default function AllNominees() {
                       <img
                         width={80}
                         height={80}
-                        src={editFormData.artist.image}
-                        alt={editFormData.artist.stageName}
+                        src={editFormData.artist?.image}
+                        alt={editFormData.artist?.stageName}
                         className="object-cover w-full h-full"
                       />
                     </div>
                     <div>
                       <p className="font-semibold text-gray-800 dark:text-white/90">
-                        {editFormData.artist.stageName}
+                        {editFormData.artist?.stageName}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {editFormData.artist.name}
+                        {editFormData.artist?.name}
                       </p>
                     </div>
                   </div>
@@ -423,20 +536,8 @@ export default function AllNominees() {
                     <Input
                       name="stageName"
                       type="text"
-                      value={editFormData.artist.stageName}
-                      onChange={(e) =>
-                        setEditFormData((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                artist: {
-                                  ...prev.artist,
-                                  stageName: e.target.value,
-                                },
-                              }
-                            : null
-                        )
-                      }
+                      value={editFormData.artist?.stageName}
+                      onChange={handleEditInputChange}
                     />
                   </div>
 
@@ -445,20 +546,8 @@ export default function AllNominees() {
                     <Input
                       name="artistName"
                       type="text"
-                      value={editFormData.artist.name}
-                      onChange={(e) =>
-                        setEditFormData((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                artist: {
-                                  ...prev.artist,
-                                  name: e.target.value,
-                                },
-                              }
-                            : null
-                        )
-                      }
+                      value={editFormData.artist?.name}
+                      onChange={handleEditInputChange}
                     />
                   </div>
 
@@ -525,7 +614,7 @@ export default function AllNominees() {
                     <Label>Nominee ID</Label>
                     <Input
                       type="text"
-                      value={editFormData.id}
+                      value={editFormData.nominee_id}
                       disabled
                       className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
                     />
@@ -536,7 +625,7 @@ export default function AllNominees() {
                     <Input
                       type="text"
                       value={new Date(
-                        editFormData.dateAdded
+                        editFormData.created_at
                       ).toLocaleDateString()}
                       disabled
                       className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
@@ -550,13 +639,65 @@ export default function AllNominees() {
                   Cancel
                 </Button>
                 <Button size="sm" type="submit">
-                  Save Changes
+                  {isUpdating ? "Edit..." : "Save Cahnges"}
                 </Button>
               </div>
             </form>
           )}
         </div>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && nomineeToDelete && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md p-6 mx-4 bg-white rounded-lg dark:bg-gray-900">
+            <div className="flex items-start gap-4">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-50 dark:bg-red-500/10">
+                <svg
+                  className="w-6 h-6 text-red-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white">
+                  Delete Nominee
+                </h3>
+                <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                  Are you sure you want to delete "{nomineeToDelete.name}"? This
+                  action cannot be undone and will remove all associated
+                  nominees and votes.
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setShowDeleteModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-red-500 hover:bg-red-600"
+                    onClick={handleDeleteConfirm}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

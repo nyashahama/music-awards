@@ -10,6 +10,16 @@ export interface Nominee {
   created_at: string;
   updated_at: string;
   categories?: CategoryBrief[];
+  artist?: {
+    image: string;
+    name: string;
+    stageName: string;
+  };
+  category?: string;
+  song?: string;
+  status?: "active" | "pending" | "disqualified";
+  votes?: number;
+  //dateAdded: string;
 }
 
 export interface CreateNomineeRequest {

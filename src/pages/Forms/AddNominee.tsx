@@ -16,6 +16,7 @@ import Switch from "../../components/form/switch/Switch";
 import DatePicker from "../../components/form/date-picker";
 import { useNominees } from "../../hooks/useNominees";
 import { CreateNomineeRequest } from "../../api/services/nomineeService";
+import Alert from "../../components/ui/alert/Alert";
 
 interface NomineeFormData {
   stageName: string;
@@ -89,6 +90,12 @@ export default function AddNominee() {
     { value: "tiktok", label: "TikTok" },
   ];
 
+  const [alert, setAlert] = useState<{
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -118,12 +125,22 @@ export default function AddNominee() {
     if (file) {
       const validTypes = ["image/jpeg", "image/png", "image/webp"];
       if (!validTypes.includes(file.type)) {
-        alert("Please upload a valid image file (JPG, PNG, or WebP)");
+        // alert("Please upload a valid image file (JPG, PNG, or WebP)");
+        setAlert({
+          variant: "error",
+          title: "Upload failed",
+          message: "Please upload a valid image file (JPG, PNG, or WebP",
+        });
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        alert("Image size should be less than 5MB");
+        //alert("Image size should be less than 5MB");
+        setAlert({
+          variant: "error",
+          title: "Upload failed",
+          message: "Image size should be less than 5MB",
+        });
         return;
       }
 
@@ -273,7 +290,12 @@ export default function AddNominee() {
       const createdNominee = await createNominee(nomineeData);
       console.log(createdNominee);
 
-      alert(`Nominee "${formData.stageName}" added successfully!`);
+      //alert(`Nominee "${formData.stageName}" added successfully!`);
+      setAlert({
+        variant: "success",
+        title: "Upload Success",
+        message: `Nominee "${formData.stageName}" added successfully!`,
+      });
 
       // Reset form
       setFormData({
@@ -327,6 +349,11 @@ export default function AddNominee() {
         description="Add a new nominee to the voting system"
       />
       <PageBreadcrumb pageTitle="Add Nominee" />
+      {alert && (
+        <Alert variant={alert.variant} title={alert.title}>
+          {alert.message}
+        </Alert>
+      )}
 
       <div className="space-y-6">
         <ComponentCard title="Add New Nominee">

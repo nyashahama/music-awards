@@ -11,6 +11,7 @@ import TextArea from "../../components/form/input/TextArea";
 import Switch from "../../components/form/switch/Switch";
 import { useCategories } from "../../hooks/useCategories";
 import { CreateCategoryRequest } from "../../api/services/categoryService";
+import Alert from "../../components/ui/alert/Alert";
 
 interface CategoryFormData {
   name: string;
@@ -30,6 +31,12 @@ export default function AddCategory() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  const [alert, setAlert] = useState<{
+    variant: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Load categories on mount to display stats
   useEffect(() => {
@@ -92,7 +99,13 @@ export default function AddCategory() {
       await createCategory(categoryData);
 
       // Show success message
-      alert(`Category "${formData.name}" added successfully!`);
+      //alert(`Category "${formData.name}" added successfully!`);
+      setAlert({
+        variant: "success",
+        title: "Category added",
+        message: `Category "${formData.name}" added successfully!`,
+      });
+      setTimeout(() => setAlert(null), 5000);
 
       // Reset form
       setFormData({
@@ -147,6 +160,11 @@ export default function AddCategory() {
         description="Add a new category to the awards system"
       />
       <PageBreadcrumb pageTitle="Add Category" />
+      {alert && (
+        <Alert variant={alert.variant} title={alert.title}>
+          {alert.message}
+        </Alert>
+      )}
 
       <div className="space-y-6">
         <ComponentCard title="Add New Category">

@@ -30,6 +30,7 @@ import ResetPassword from "./pages/AuthPages/ResetPassword";
 import CategoriesManagement from "./components/tables/CategoriesManagement";
 import EditCategory from "./components/tables/EditCategory";
 import AddCategory from "./pages/Forms/AddCategory";
+import CategoriesListPage from "./pages/Tables/CategoriesListPage";
 
 export default function App() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
               path="/categories/edit/:categoryId"
               element={<EditCategory />}
             />
+            <Route path="/categories" element={<CategoriesListPage />} />
             <Route path="/best-male" element={<CategoryPage />} />
             <Route path="/best-female" element={<CategoryPage />} />
             <Route path="/song-year" element={<CategoryPage />} />

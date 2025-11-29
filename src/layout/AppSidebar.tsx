@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-
+import { useCategories } from "../hooks";
 import {
   BoxCubeIcon,
   CalenderIcon,
@@ -24,31 +24,26 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
     subItems: [{ name: "Voting Overview", path: "/", pro: false }],
   },
+];
+
+const staticCategoryItems = [
   {
-    icon: <UserCircleIcon />,
-    name: "Categories",
-    subItems: [
-      {
-        name: "Manage Categories",
-        path: "/categories/manage",
-        pro: false,
-        new: true,
-      },
-      { name: "View Categories", path: "categories", pro: false },
-      { name: "Add Category", path: "/categories/add", pro: false },
-      { name: "Best Male Artist", path: "/best-male", pro: false },
-      { name: "Best Female Artist", path: "/best-female", pro: false },
-      { name: "Song of the Year", path: "/song-year", pro: false },
-      { name: "Best Collaboration", path: "/collaboration", pro: false },
-      { name: "Best Newcomer", path: "/newcomer", pro: false },
-    ],
+    name: "Manage Categories",
+    path: "/categories/manage",
+    pro: false,
+    new: true,
   },
+  { name: "View Categories", path: "/categories", pro: false },
+  { name: "Add Category", path: "/categories/add", pro: false },
+];
+
+const otherNavItems: NavItem[] = [
   {
     icon: <PieChartIcon />,
     name: "Live Results",
@@ -108,7 +103,9 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
+  const { categories, listActiveCategories } = useCategories();
 
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
     index: number;
@@ -117,6 +114,28 @@ const AppSidebar: React.FC = () => {
     {}
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Fetch categories on mount
+  useEffect(() => {
+    listActiveCategories();
+  }, []);
+
+  // Build dynamic navigation when categories change
+  useEffect(() => {
+    const dynamicCategoryItems = categories.categories.map((category) => ({
+      name: category.name,
+      path: `/category/${category.category_id}`,
+      pro: false,
+    }));
+
+    const categoriesNavItem: NavItem = {
+      icon: <UserCircleIcon />,
+      name: "Categories",
+      subItems: [...staticCategoryItems, ...dynamicCategoryItems],
+    };
+
+    setNavItems([...baseNavItems, categoriesNavItem, ...otherNavItems]);
+  }, [categories.categories]);
 
   const isActive = useCallback(
     (path: string) => location.pathname === path,
@@ -145,7 +164,7 @@ const AppSidebar: React.FC = () => {
     if (!submenuMatched) {
       setOpenSubmenu(null);
     }
-  }, [location, isActive]);
+  }, [location, isActive, navItems]);
 
   useEffect(() => {
     if (openSubmenu !== null) {

@@ -48,7 +48,6 @@ export default function App() {
             <Route path="/blank" element={<Blank />} />
 
             {/* Forms */}
-            {/* <Route path="/add-nominee" element={<FormElements />} /> */}
             <Route path="/voters" element={<RegisteredVoters />} />
             <Route path="/voter-activity" element={<VotingActivity />} />
 
@@ -56,6 +55,7 @@ export default function App() {
 
             {/* Tables */}
             <Route path="/basic-table" element={<BasicTables />} />
+
             {/* Category Pages */}
             <Route
               path="/categories/manage"
@@ -67,11 +67,9 @@ export default function App() {
               element={<EditCategory />}
             />
             <Route path="/categories" element={<CategoriesListPage />} />
-            <Route path="/best-male" element={<CategoryPage />} />
-            <Route path="/best-female" element={<CategoryPage />} />
-            <Route path="/song-year" element={<CategoryPage />} />
-            <Route path="/collaboration" element={<CategoryPage />} />
-            <Route path="/newcomer" element={<CategoryPage />} />
+
+            {/* Dynamic Category Route - replaces all hardcoded category routes */}
+            <Route path="/category/:categoryId" element={<CategoryPage />} />
 
             {/* Nominees Management */}
             <Route path="/nominees" element={<AllNominees />} />
@@ -92,7 +90,7 @@ export default function App() {
             <Route path="/bar-chart" element={<BarChart />} />
           </Route>
 
-          {/* Auth Layout - Now wrapped in AuthProvider */}
+          {/* Auth Layout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

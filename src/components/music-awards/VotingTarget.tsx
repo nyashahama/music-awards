@@ -1,12 +1,47 @@
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
 
-export default function VotingTarget() {
-  const series = [68.5];
+interface VotingTargetProps {
+  availableVotes?: {
+    free_votes: number;
+    paid_votes: number;
+    total: number;
+  } | null;
+  totalVotes?: number;
+  isLoading?: boolean;
+}
+
+export default function VotingTarget({
+  availableVotes,
+  totalVotes = 0,
+  isLoading = false,
+}: VotingTargetProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Calculate metrics
+  const targetVotes = 20000;
+  const todayVotes = useMemo(() => {
+    // This would ideally come from an API that tracks daily votes
+    // For now, we'll estimate based on available data
+    return Math.floor(totalVotes * 0.15); // Assume 15% were today
+  }, [totalVotes]);
+
+  const progress = useMemo(() => {
+    return Math.min(100, Math.round((totalVotes / targetVotes) * 100));
+  }, [totalVotes, targetVotes]);
+
+  const percentageGrowth = useMemo(() => {
+    // Calculate growth rate (mock - would need historical data)
+    if (totalVotes === 0) return "+0.0%";
+    const growth = ((todayVotes / (totalVotes - todayVotes)) * 100).toFixed(1);
+    return growth.startsWith("-") ? growth : `+${growth}%`;
+  }, [totalVotes, todayVotes]);
+
+  const series = [progress];
   const options: ApexOptions = {
     colors: ["#465FFF"],
     chart: {
@@ -55,14 +90,26 @@ export default function VotingTarget() {
     labels: ["Progress"],
   };
 
-  const [isOpen, setIsOpen] = useState(false);
-
   function toggleDropdown() {
     setIsOpen(!isOpen);
   }
 
   function closeDropdown() {
     setIsOpen(false);
+  }
+
+  console.log(availableVotes);
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-white/[0.03] animate-pulse">
+        <div className="px-5 pt-5 bg-white shadow-default rounded-2xl pb-11 dark:bg-gray-900 sm:px-6 sm:pt-6">
+          <div className="h-8 bg-gray-200 rounded dark:bg-gray-700 w-1/3 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded dark:bg-gray-700 w-2/3 mb-6"></div>
+          <div className="h-64 bg-gray-200 rounded dark:bg-gray-700"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -101,7 +148,7 @@ export default function VotingTarget() {
             </Dropdown>
           </div>
         </div>
-        <div className="relative ">
+        <div className="relative">
           <div className="max-h-[330px]" id="chartDarkStyle">
             <Chart
               options={options}
@@ -112,12 +159,17 @@ export default function VotingTarget() {
           </div>
 
           <span className="absolute left-1/2 top-full -translate-x-1/2 -translate-y-[95%] rounded-full bg-success-50 px-3 py-1 text-xs font-medium text-success-600 dark:bg-success-500/15 dark:text-success-500">
-            +15.2%
+            {percentageGrowth}
           </span>
         </div>
         <p className="mx-auto mt-10 w-full max-w-[380px] text-center text-sm text-gray-500 sm:text-base">
-          13,700 votes cast today, exceeding yesterday's count. Great engagement
-          from fans!
+          {totalVotes > 0
+            ? `${todayVotes.toLocaleString()} votes cast today. ${
+                todayVotes > 0
+                  ? "Great engagement from fans!"
+                  : "Let's boost those numbers!"
+              }`
+            : "No votes cast yet. Start voting to see progress!"}
         </p>
       </div>
 
@@ -127,7 +179,7 @@ export default function VotingTarget() {
             Target
           </p>
           <p className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
-            20K
+            {targetVotes.toLocaleString()}
             <svg
               width="16"
               height="16"
@@ -152,7 +204,7 @@ export default function VotingTarget() {
             Total Votes
           </p>
           <p className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
-            13.7K
+            {totalVotes.toLocaleString()}
             <svg
               width="16"
               height="16"
@@ -177,7 +229,7 @@ export default function VotingTarget() {
             Today
           </p>
           <p className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
-            2.4K
+            {todayVotes.toLocaleString()}
             <svg
               width="16"
               height="16"

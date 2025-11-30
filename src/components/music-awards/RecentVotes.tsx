@@ -6,66 +6,128 @@ import {
   TableRow,
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
+import { Nominee } from "../../api/services/nomineeService";
+import { UserVoteResponse } from "../../api/services";
 
-interface Vote {
-  id: number;
-  artistName: string;
-  category: string;
-  votes: number;
-  status: "Leading" | "Rising" | "Falling";
-  image: string;
-  percentage: string;
+interface RecentVotesProps {
+  nominees?: Nominee[];
+  votes?: UserVoteResponse[];
+  isLoading?: boolean;
 }
 
-const tableData: Vote[] = [
-  {
-    id: 1,
-    artistName: "Winky D",
-    category: "Best Male Artist",
-    votes: 4523,
-    percentage: "+12.5%",
-    status: "Leading",
-    image: "/images/user/owner.jpg",
-  },
-  {
-    id: 2,
-    artistName: "Enzo Ishall",
-    category: "Song of the Year",
-    votes: 3891,
-    percentage: "+8.2%",
-    status: "Rising",
-    image: "/images/user/owner.jpg",
-  },
-  {
-    id: 3,
-    artistName: "Jah Prayzah",
-    category: "Best Collaboration",
-    votes: 3254,
-    percentage: "+15.7%",
-    status: "Leading",
-    image: "/images/user/owner.jpg",
-  },
-  {
-    id: 4,
-    artistName: "Holy Ten",
-    category: "Best Newcomer",
-    votes: 2847,
-    percentage: "-3.1%",
-    status: "Falling",
-    image: "/images/user/owner.jpg",
-  },
-  {
-    id: 5,
-    artistName: "Tocky Vibes",
-    category: "Best Video",
-    votes: 2156,
-    percentage: "+6.4%",
-    status: "Rising",
-    image: "/images/user/owner.jpg",
-  },
-];
+interface NomineeVoteCount {
+  nominee: UserVoteResponse["nominee"];
+  category: UserVoteResponse["category"];
+  voteCount: number;
+  lastVote: UserVoteResponse;
+}
 
-export default function RecentVotes() {
+export default function RecentVotes({
+  nominees = [],
+  votes = [],
+  isLoading = false,
+}: RecentVotesProps) {
+  // Process votes to get top performers
+  const getTopPerformers = (): NomineeVoteCount[] => {
+    if (votes.length === 0) {
+      return [];
+    }
+
+    // Count votes per nominee per category
+    const voteMap = new Map<string, NomineeVoteCount>();
+
+    votes.forEach((vote) => {
+      const key = `${vote.nominee.nominee_id}-${vote.category.category_id}`;
+
+      if (voteMap.has(key)) {
+        const existing = voteMap.get(key)!;
+        existing.voteCount += 1;
+        // Keep the most recent vote
+        if (
+          new Date(vote.created_at) > new Date(existing.lastVote.created_at)
+        ) {
+          existing.lastVote = vote;
+        }
+      } else {
+        voteMap.set(key, {
+          nominee: vote.nominee,
+          category: vote.category,
+          voteCount: 1,
+          lastVote: vote,
+        });
+      }
+    });
+    console.log(nominees);
+
+    // Convert to array and sort by vote count
+    return Array.from(voteMap.values())
+      .sort((a, b) => b.voteCount - a.voteCount)
+      .slice(0, 5); // Top 5 performers
+  };
+
+  const topPerformers = getTopPerformers();
+
+  // Calculate percentage change (mock for now - you'd need historical data)
+  const getPercentageChange = (index: number): string => {
+    const changes = ["+12.5%", "+8.2%", "+5.3%", "+2.1%", "-1.5%"];
+    return changes[index] || "+0.0%";
+  };
+
+  const getStatus = (index: number): "Leading" | "Rising" | "Falling" => {
+    if (index === 0) return "Leading";
+    if (index < 3) return "Rising";
+    return "Falling";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 animate-pulse">
+        <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="h-6 bg-gray-200 rounded dark:bg-gray-700 w-1/4"></div>
+          <div className="flex gap-3">
+            <div className="h-10 bg-gray-200 rounded dark:bg-gray-700 w-24"></div>
+            <div className="h-10 bg-gray-200 rounded dark:bg-gray-700 w-20"></div>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((item) => (
+            <div key={item} className="flex items-center justify-between py-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gray-200 rounded-full dark:bg-gray-700"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-24 dark:bg-gray-700"></div>
+                  <div className="h-3 bg-gray-200 rounded w-16 dark:bg-gray-700"></div>
+                </div>
+              </div>
+              <div className="h-4 bg-gray-200 rounded w-20 dark:bg-gray-700"></div>
+              <div className="h-4 bg-gray-200 rounded w-16 dark:bg-gray-700"></div>
+              <div className="h-6 bg-gray-200 rounded w-16 dark:bg-gray-700"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (topPerformers.length === 0) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+        <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+              Top Performing Artists
+            </h3>
+          </div>
+        </div>
+        <div className="py-12 text-center">
+          <p className="text-gray-500 dark:text-gray-400">
+            No votes have been cast yet. Be the first to vote!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -151,45 +213,53 @@ export default function RecentVotes() {
           </TableHeader>
 
           <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {tableData.map((vote) => (
-              <TableRow key={vote.id} className="">
+            {topPerformers.map((performer, index) => (
+              <TableRow
+                key={`${performer.nominee.nominee_id}-${performer.category.category_id}`}
+              >
                 <TableCell className="py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-[50px] w-[50px] overflow-hidden rounded-full">
                       <img
-                        src={vote.image}
+                        src={
+                          performer.nominee.image_url ||
+                          "/images/user/owner.jpg"
+                        }
                         className="h-[50px] w-[50px] object-cover"
-                        alt={vote.artistName}
+                        alt={performer.nominee.name}
+                        onError={(e) => {
+                          e.currentTarget.src = "/images/user/owner.jpg";
+                        }}
                       />
                     </div>
                     <div>
                       <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                        {vote.artistName}
+                        {performer.nominee.name}
                       </p>
                       <span className="text-gray-500 text-theme-xs dark:text-gray-400">
-                        {vote.percentage} from last week
+                        {getPercentageChange(index)} from last week
                       </span>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {vote.category}
+                  {performer.category.name}
                 </TableCell>
                 <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {vote.votes.toLocaleString()}
+                  {performer.voteCount.toLocaleString()}
                 </TableCell>
                 <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                   <Badge
                     size="sm"
                     color={
-                      vote.status === "Leading"
+                      getStatus(index) === "Leading"
                         ? "success"
-                        : vote.status === "Rising"
+                        : getStatus(index) === "Rising"
                           ? "warning"
                           : "error"
                     }
                   >
-                    {vote.status}
+                    {getStatus(index)}
                   </Badge>
                 </TableCell>
               </TableRow>

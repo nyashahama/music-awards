@@ -50,6 +50,20 @@ export interface UserVoteResponse {
   category: CategoryDetails;
   nominee: NomineeDetails;
   created_at: string;
+  voter?: {
+    userId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  // nominee?: {
+  //   artistName: string;
+  //   stageName: string;
+  // };
+  // category?: string;
+  votedAt?: string;
+  ipAddress?: string;
+  location?: string;
 }
 
 export interface CategoryDetails {

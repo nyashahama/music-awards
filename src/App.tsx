@@ -1,36 +1,54 @@
+// App.tsx
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { AuthProvider } from "./hooks/useUsers";
+import { ScrollToTop } from "./components/common/ScrollToTop";
+import AppLayout from "./layout/AppLayout";
+
+// Auth Pages
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
-import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Videos from "./pages/UiElements/Videos";
-import Images from "./pages/UiElements/Images";
-import Alerts from "./pages/UiElements/Alerts";
-import Badges from "./pages/UiElements/Badges";
-import Avatars from "./pages/UiElements/Avatars";
-import Buttons from "./pages/UiElements/Buttons";
-import LineChart from "./pages/Charts/LineChart";
-import BarChart from "./pages/Charts/BarChart";
-import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import Blank from "./pages/Blank";
-import AppLayout from "./layout/AppLayout";
-import { ScrollToTop } from "./components/common/ScrollToTop";
+import ForgotPassword from "./pages/AuthPages/ForgotPassword";
+import ResetPassword from "./pages/AuthPages/ResetPassword";
+
+// Dashboard Pages
 import Home from "./pages/Dashboard/Home";
-import { AuthProvider } from "./hooks/useUsers";
+import UserProfiles from "./pages/UserProfiles";
+import Calendar from "./pages/Calendar";
+import Blank from "./pages/Blank";
+
+// Category & Nominee Management
 import CategoryPage from "./pages/Tables/CategoryPage";
+import CategoriesManagement from "./components/tables/CategoriesManagement";
+import CategoriesListPage from "./pages/Tables/CategoriesListPage";
+import EditCategory from "./components/tables/EditCategory";
+import AddCategory from "./pages/Forms/AddCategory";
 import AllNominees from "./components/tables/AllNominees";
 import AddNominee from "./pages/Forms/AddNominee";
+
+// Voting Management
 import RegisteredVoters from "./components/tables/RegisteredVoters";
 import VotingActivity from "./components/tables/VotingActivity";
 import LiveResults from "./components/tables/LiveResults";
 import VotingAnalyticsReports from "./components/tables/VotingAnalyticsReports";
-import ForgotPassword from "./pages/AuthPages/ForgotPassword";
-import ResetPassword from "./pages/AuthPages/ResetPassword";
-import CategoriesManagement from "./components/tables/CategoriesManagement";
-import EditCategory from "./components/tables/EditCategory";
-import AddCategory from "./pages/Forms/AddCategory";
-import CategoriesListPage from "./pages/Tables/CategoriesListPage";
+
+// UI Elements
+import Alerts from "./pages/UiElements/Alerts";
+import Avatars from "./pages/UiElements/Avatars";
+import Badges from "./pages/UiElements/Badges";
+import Buttons from "./pages/UiElements/Buttons";
+import Images from "./pages/UiElements/Images";
+import Videos from "./pages/UiElements/Videos";
+
+// Charts
+import LineChart from "./pages/Charts/LineChart";
+import BarChart from "./pages/Charts/BarChart";
+
+// Tables
+import BasicTables from "./pages/Tables/BasicTables";
+
+// Other
+import NotFound from "./pages/OtherPage/NotFound";
+import ProtectedRoute from "./components/common/ProtectedRoutes";
 
 export default function App() {
   return (
@@ -38,25 +56,28 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
-          {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
+          {/* Public Routes */}
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Others Page */}
+          {/* Protected Dashboard Routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Home />} />
+
+            {/* User & Profile */}
             <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
 
-            {/* Forms */}
-            <Route path="/voters" element={<RegisteredVoters />} />
-            <Route path="/voter-activity" element={<VotingActivity />} />
-
-            <Route path="/live-results" element={<LiveResults />} />
-
-            {/* Tables */}
-            <Route path="/basic-table" element={<BasicTables />} />
-
-            {/* Category Pages */}
+            {/* Category Management */}
             <Route
               path="/categories/manage"
               element={<CategoriesManagement />}
@@ -67,17 +88,22 @@ export default function App() {
               element={<EditCategory />}
             />
             <Route path="/categories" element={<CategoriesListPage />} />
-
-            {/* Dynamic Category Route - replaces all hardcoded category routes */}
             <Route path="/category/:categoryId" element={<CategoryPage />} />
 
-            {/* Nominees Management */}
+            {/* Nominee Management */}
             <Route path="/nominees" element={<AllNominees />} />
             <Route path="/add-nominee" element={<AddNominee />} />
 
+            {/* Voting Management */}
+            <Route path="/voters" element={<RegisteredVoters />} />
+            <Route path="/voter-activity" element={<VotingActivity />} />
+            <Route path="/live-results" element={<LiveResults />} />
             <Route path="/analytics" element={<VotingAnalyticsReports />} />
 
-            {/* Ui Elements */}
+            {/* Calendar */}
+            <Route path="/calendar" element={<Calendar />} />
+
+            {/* UI Elements */}
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/avatars" element={<Avatars />} />
             <Route path="/badge" element={<Badges />} />
@@ -88,13 +114,10 @@ export default function App() {
             {/* Charts */}
             <Route path="/line-chart" element={<LineChart />} />
             <Route path="/bar-chart" element={<BarChart />} />
-          </Route>
 
-          {/* Auth Layout */}
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+            {/* Tables */}
+            <Route path="/basic-table" element={<BasicTables />} />
+          </Route>
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />

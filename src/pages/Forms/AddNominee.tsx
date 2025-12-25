@@ -131,6 +131,7 @@ export default function AddNominee() {
           title: "Upload failed",
           message: "Please upload a valid image file (JPG, PNG, or WebP",
         });
+        setTimeout(() => setAlert(null), 5000);
         return;
       }
 
@@ -141,6 +142,7 @@ export default function AddNominee() {
           title: "Upload failed",
           message: "Image size should be less than 5MB",
         });
+        setTimeout(() => setAlert(null), 5000);
         return;
       }
 
@@ -296,6 +298,7 @@ export default function AddNominee() {
         title: "Upload Success",
         message: `Nominee "${formData.stageName}" added successfully!`,
       });
+      setTimeout(() => setAlert(null), 5000);
 
       // Reset form
       setFormData({

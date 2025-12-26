@@ -30,7 +30,7 @@ export default function VotingStatistics({
 
     // Group votes by month
     const monthlyVotes = Array(12).fill(0);
-    const monthlyVoters = new Map<string, Set<string>>(); // Track unique voters per month
+    //const monthlyVoters = new Map<string, Set<string>>(); // Track unique voters per month
 
     votes.forEach((vote) => {
       const date = new Date(vote.created_at);

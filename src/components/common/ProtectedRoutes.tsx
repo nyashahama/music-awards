@@ -6,7 +6,7 @@ export default function ProtectedRoute({
 }: {
   children: React.ReactNode;
 }) {
-  const { auth } = useUsers(); // Assuming your useUsers hook provides user authentication state
+  const { auth } = useUsers();
 
   if (!auth.user) {
     return <Navigate to="/signin" replace />;

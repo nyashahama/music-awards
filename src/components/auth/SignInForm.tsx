@@ -35,24 +35,28 @@ export default function SignInForm() {
 
   const emailInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const hasRedirected = useRef(false); // Add this to prevent multiple redirects
 
   // Use the context hook instead of useUsers directly
   const { login, auth } = useAuth();
 
-  // Handle successful login
+  // Handle successful login - FIXED VERSION
   useEffect(() => {
-    if (auth.isAuthenticated && auth.user) {
+    if (auth.isAuthenticated && auth.user && !hasRedirected.current) {
+      hasRedirected.current = true; // Mark as redirected
+
       setAlert({
         variant: "success",
         title: "Login Successful",
         message: "You are now logged in.",
       });
 
-      // Auto-dismiss and navigate
-      setTimeout(() => {
-        setAlert(null);
-        navigate("/");
-      }, 1500);
+      // Navigate immediately without setTimeout
+      const timer = setTimeout(() => {
+        navigate("/", { replace: true }); // Use replace to prevent back navigation issues
+      }, 1000);
+
+      return () => clearTimeout(timer);
     }
   }, [auth.isAuthenticated, auth.user, navigate]);
 
@@ -121,6 +125,7 @@ export default function SignInForm() {
         password: formData.password,
         rememberMe: isChecked,
       });
+      // Don't navigate here - let the useEffect handle it
     } catch (error: any) {
       // Show error alert
       setAlert({
@@ -329,7 +334,7 @@ export default function SignInForm() {
                     </label>
                   </div>
                   <Link
-                    to="/reset-password"
+                    to="/forgot-password"
                     className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
                   >
                     Forgot password?
